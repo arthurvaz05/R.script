@@ -1,0 +1,15 @@
+dt <- data.frame(ID=1:5, 
+ Color=factor(c("green", "red", "red", "blue", "green"), levels=c("blue", "green", "red", "purple")),
+ Shape=factor(c("square", "triangle", "square", "triangle", "cirlce")))
+ 
+library(tidyverse)
+
+dt2 <- spread(dt,Color,Shape)
+dt3 <- spread(dt,Shape,Color)
+df <- cbind(dt2,dt3)
+
+df2 <- apply(df, 2, function(x){sapply(x, function(y){
+ ifelse(is.na(y),0,1)})})
+ 
+df2 <- as.data.frame(df2)
+df <- cbind(dt,df2[,-1])
