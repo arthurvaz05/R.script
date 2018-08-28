@@ -1,0 +1,140 @@
+"","Delegacia","Furto de Bicicleta","Roubo de Bicicleta","Bairro","BAIRRO","FB","FB1","FB2","roubo_geral"
+"1","1ª DP - Praça Mauá",0,1,"Praça Mauá","Praça Mauá","","0","",1
+"2","4ª DP - Praça da República",0,1,"Praça da República","Praça da República","","0","",1
+"3","5ª DP - Mem de Sá",0,1,"Mem de Sá","Mem de Sá","","0","",1
+"4","6ª DP - Cidade Nova",1,1,"Cidade Nova","Cidade Nova","","1","",2
+"5","7ª DP - Santa Tereza",0,1,"Santa Tereza","Santa Tereza","","0","",1
+"6","9ª DP - Catete",5,2,"Catete","Catete","","5","",7
+"7","10ª DP - Botafogo",6,1,"Botafogo","Botafogo","","6","",7
+"8","11ª DP - Rocinha",0,1,"Rocinha","Rocinha","","0","",1
+"9","12ª DP - Copacabana",5,1,"Copacabana","Copacabana","","5","",6
+"10","13ª DP - Ipanema",1,1,"Ipanema","Ipanema","","1","",2
+"11","14ª DP - Leblon",7,2,"Leblon","Leblon","","7","",9
+"12","15ª DP - Gávea",0,2,"Gávea","Gávea","","0","",2
+"13","16ª DP - Barra da Tijuca",2,1,"Barra da Tijuca","Barra da Tijuca","","2","",3
+"14","17ª DP - São Cristóvão",1,1,"São Cristóvão","São Cristóvão","","1","",2
+"15","18ª DP - Praça da Bandeira",3,2,"Praça da Bandeira","Praça da Bandeira","","3","",5
+"16","19ª DP - Tijuca",1,1,"Tijuca","Tijuca","","1","",2
+"17","20ª DP - Grajaú",1,2,"Grajaú","Grajaú","","1","",3
+"18","21ª DP - Bonsucesso",1,1,"Bonsucesso","Bonsucesso","","1","",2
+"19","22ª DP - Penha",0,1,"Penha","Penha","","0","",1
+"20","23ª DP - Meier",1,1,"Meier","Meier","","1","",2
+"21","24ª DP - Piedade",0,1,"Piedade","Piedade","","0","",1
+"22","25ª DP - Engenho Novo",1,1,"Engenho Novo","Engenho Novo","","1","",2
+"23","26ª DP - Todos os Santos",2,1,"Todos os Santos","Todos os Santos","","2","",3
+"24","27ª DP - Vicente de Carvalho",3,1,"Vicente de Carvalho","Vicente de Carvalho","","3","",4
+"25","28ª DP - Campinho",0,1,"Campinho","Campinho","","0","",1
+"26","29ª DP - Madureira",0,1,"Madureira","Madureira","","0","",1
+"27","30ª DP - Marechal Hermes",0,1,"Marechal Hermes","Marechal Hermes","","0","",1
+"28","31ª DP - Ricardo Albuquerque",0,1,"Ricardo Albuquerque","Ricardo Albuquerque","","0","",1
+"29","32ª DP - Taquara",0,1,"Taquara","Taquara","","0","",1
+"30","33ª DP - Realengo",0,1,"Realengo","Realengo","","0","",1
+"31","34ª DP - Bangu",1,1,"Bangu","Bangu","","1","",2
+"32","35ª DP - Campo Grande",0,1,"Campo Grande","Campo Grande","","0","",1
+"33","36ª DP - Santa Cruz",1,1,"Santa Cruz","Santa Cruz","","1","",2
+"34","37ª DP - Ilha do Governador",0,1,"Ilha do Governador","Ilha do Governador","","0","",1
+"35","38ª DP - Braz de Pina",1,1,"Braz de Pina","Braz de Pina","","1","",2
+"36","39ª DP - Pavuna",0,1,"Pavuna","Pavuna","","0","",1
+"37","40ª DP - Honório Gurgel",0,1,"Honório Gurgel","Honório Gurgel","","0","",1
+"38","41ª DP - Tanque",1,1,"Tanque","Tanque","","1","",2
+"39","42ª DP - Recreio",7,2,"Recreio","Recreio","","7","",9
+"40","43ª DP - Pedra de Guaratiba",0,1,"Pedra de Guaratiba","Pedra de Guaratiba","","0","",1
+"41","44ª DP - Inhaúma",0,1,"Inhaúma","Inhaúma","","0","",1
+"42","45ª DP - Alemão",0,0,"Alemão","Alemão","0","0","0",0
+"43","48ª DP - Seropédica",2,0,"Seropédica","Seropédica","0","2","0",2
+"44","50ª DP - Itaguaí",0,0,"Itaguaí","Itaguaí","0","0","0",0
+"45","51ª DP - Paracambí",3,0,"Paracambí","Paracambí","0","3","0",3
+"46","52ª DP - Nova Iguaçu",2,0,"Nova Iguaçu","Nova Iguaçu","0","2","0",2
+"47","53ª DP - Mesquita",0,0,"Mesquita","Mesquita","0","0","0",0
+"48","54ª DP - Belford Roxo",1,0,"Belford Roxo","Belford Roxo","0","1","0",1
+"49","55ª DP - Queimados",2,0,"Queimados","Queimados","0","2","0",2
+"50","56ª DP - Comendador Soares 5 0",NA,NA,"Comendador Soares 5 0","Comendador Soares 5 0","",NA,"",NA
+"51","57ª DP - Nilópolis",1,0,"Nilópolis","Nilópolis","0","1","0",1
+"52","58ª DP - Posse",0,0,"Posse","Posse","0","0","0",0
+"53","59ª DP - Duque de Caxias",0,0,"Duque de Caxias","Duque de Caxias","0","0","0",0
+"54","60ª DP - Campos Elíseos",0,0,"Campos Elíseos","Campos Elíseos","0","0","0",0
+"55","61ª DP - Xerém",0,0,"Xerém","Xerém","0","0","0",0
+"56","62ª DP - Imbariê",1,2,"Imbariê","Imbariê","2","1","2",3
+"57","63ª DP - Japerí",0,0,"Japerí","Japerí","0","0","0",0
+"58","64ª DP - Vilar dos Teles",0,0,"Vilar dos Teles","Vilar dos Teles","0","0","0",0
+"59","65ª DP - Magé",0,0,"Magé","Magé","0","0","0",0
+"60","66ª DP - Piabetá",2,0,"Piabetá","Piabetá","0","2","0",2
+"61","67ª DP - Guapimirim",0,1,"Guapimirim","Guapimirim","1","0","1",1
+"62","70ª DP - Tanguá",0,0,"Tanguá","Tanguá","0","0","0",0
+"63","71ª DP - Itaboraí",0,0,"Itaboraí","Itaboraí","0","0","0",0
+"64","72ª DP - São Gonçalo",1,0,"São Gonçalo","São Gonçalo","0","1","0",1
+"65","73ª DP - Neves",1,0,"Neves","Neves","0","1","0",1
+"66","74ª DP - Alcantara",0,0,"Alcantara","Alcantara","0","0","0",0
+"67","75ª DP - Rio do Ouro",0,0,"Rio do Ouro","Rio do Ouro","0","0","0",0
+"68","76ª DP - Niterói - Centro",3,1,"Niterói","Niterói","1","3","1",4
+"69","77ª DP - Icaraí",8,0,"Icaraí","Icaraí","0","8","0",8
+"70","78ª DP - Fonseca",2,0,"Fonseca","Fonseca","0","2","0",2
+"71","79ª DP - Jurujuba",0,0,"Jurujuba","Jurujuba","0","0","0",0
+"72","81ª DP - Itaipú",4,0,"Itaipú","Itaipú","0","4","0",4
+"73","82ª DP - Maricá",0,0,"Maricá","Maricá","0","0","0",0
+"74","87ª DP - Paty do Alferes",0,0,"Paty do Alferes","Paty do Alferes","0","0","0",0
+"75","88ª DP - Barra do Piraí",1,0,"Barra do Piraí","Barra do Piraí","0","1","0",1
+"76","89ª DP - Resende",1,0,"Resende","Resende","0","1","0",1
+"77","90ª DP - Barra Mansa",0,0,"Barra Mansa","Barra Mansa","0","0","0",0
+"78","91ª DP - Valença",1,0,"Valença","Valença","0","1","0",1
+"79","92ª DP - Rio das Flores",0,0,"Rio das Flores","Rio das Flores","0","0","0",0
+"80","93ª DP - Volta Redonda",1,0,"Volta Redonda","Volta Redonda","0","1","0",1
+"81","94ª DP - Piraí",0,0,"Piraí","Piraí","0","0","0",0
+"82","95ª DP - Vassouras",0,0,"Vassouras","Vassouras","0","0","0",0
+"83","96ª DP - Miguel Pereira",0,0,"Miguel Pereira","Miguel Pereira","0","0","0",0
+"84","97ª DP - Mendes",0,0,"Mendes","Mendes","0","0","0",0
+"85","98ª DP - Paulo de Frontin",0,0,"Paulo de Frontin","Paulo de Frontin","0","0","0",0
+"86","99ª DP - Itatiaia",0,0,"Itatiaia","Itatiaia","0","0","0",0
+"87","100ª DP - Porto Real",0,0,"Porto Real","Porto Real","0","0","0",0
+"88","101ª DP - Pinheiral",0,0,"Pinheiral","Pinheiral","0","0","0",0
+"89","104ª DP - São J. Rio Preto 0 0",NA,NA,"São J. Rio Preto 0 0","São J. Rio Preto 0 0","",NA,"",NA
+"90","105ª DP - Petrópolis",2,0,"Petrópolis","Petrópolis","0","2","0",2
+"91","106ª DP - Itaipava",1,1,"Itaipava","Itaipava","","1","",2
+"92","107ª DP - Paraíba do Sul",0,1,"Paraíba do Sul","Paraíba do Sul","","0","",1
+"93","108ª DP - Três Rios",2,1,"Três Rios","Três Rios","","2","",3
+"94","109ª DP - Sapucaia",0,1,"Sapucaia","Sapucaia","","0","",1
+"95","110ª DP - Teresópolis",0,1,"Teresópolis","Teresópolis","","0","",1
+"96","111ª DP - Sumidouro",0,1,"Sumidouro","Sumidouro","","0","",1
+"97","112ª DP - Carmo",0,1,"Carmo","Carmo","","0","",1
+"98","118ª DP - Araruama",2,1,"Araruama","Araruama","","2","",3
+"99","119ª DP - Rio Bonito",0,1,"Rio Bonito","Rio Bonito","","0","",1
+"100","120ª DP - Silva Jardim",1,1,"Silva Jardim","Silva Jardim","","1","",2
+"101","121ª DP - Casimiro de Abreu",1,1,"Casimiro de Abreu","Casimiro de Abreu","","1","",2
+"102","122ª DP - Conceição de Macabú",0,1,"Conceição de Macabú","Conceição de Macabú","","0","",1
+"103","123ª DP - Macaé",0,1,"Macaé","Macaé","","0","",1
+"104","124ª DP - Saquarema",1,1,"Saquarema","Saquarema","","1","",2
+"105","125ª DP - São Pedro da Aldeia",1,1,"São Pedro da Aldeia","São Pedro da Aldeia","","1","",2
+"106","126ª DP - Cabo Frio",2,1,"Cabo Frio","Cabo Frio","","2","",3
+"107","127ª DP - Búzios",0,1,"Búzios","Búzios","","0","",1
+"108","128ª DP - Rio das Ostras",5,2,"Rio das Ostras","Rio das Ostras","","5","",7
+"109","129ª DP - Iguaba",0,1,"Iguaba","Iguaba","","0","",1
+"110","130ª DP - Quissamã",2,1,"Quissamã","Quissamã","","2","",3
+"111","132ª DP - Arraial do Cabo",0,1,"Arraial do Cabo","Arraial do Cabo","","0","",1
+"112","134ª DP - Campos",10,0,"Campos","Campos","0","10","0",10
+"113","135ª DP - Itaocara",0,1,"Itaocara","Itaocara","","0","",1
+"114","136ª DP - Santo Antonio de Pádua",0,1,"Santo Antonio de Pádua","Santo Antonio de Pádua","","0","",1
+"115","137ª DP - Miracema",0,1,"Miracema","Miracema","","0","",1
+"116","138ª DP - Lajes de Muriaré",0,1,"Lajes de Muriaré","Lajes de Muriaré","","0","",1
+"117","139ª DP - Porciúncula",2,1,"Porciúncula","Porciúncula","","2","",3
+"118","140ª DP - Natividade",1,1,"Natividade","Natividade","","1","",2
+"119","141ª DP - São Fidelis",0,1,"São Fidelis","São Fidelis","","0","",1
+"120","142ª DP - Cambucí",1,1,"Cambucí","Cambucí","","1","",2
+"121","143ª DP - Itaperuna",3,1,"Itaperuna","Itaperuna","","3","",4
+"122","144ª DP - Bom Jesus Itabapoana",3,1,"Bom Jesus Itabapoana","Bom Jesus Itabapoana","","3","",4
+"123","145ª DP - São João da Barra",0,1,"São João da Barra","São João da Barra","","0","",1
+"124","146ª DP - Guarus",0,2,"Guarus","Guarus","","0","",2
+"125","147ª DP - São Francisco de Itabapoana",0,1,"São Francisco de Itabapoana","São Francisco de Itabapoana","","0","",1
+"126","148ª DP - Italva",0,1,"Italva","Italva","","0","",1
+"127","151ª DP - Nova Friburgo",1,1,"Nova Friburgo","Nova Friburgo","","1","",2
+"128","152ª DP - Duas Barras",0,1,"Duas Barras","Duas Barras","","0","",1
+"129","153ª DP - Cantagalo",0,1,"Cantagalo","Cantagalo","","0","",1
+"130","154ª DP - Cordeiro",1,1,"Cordeiro","Cordeiro","","1","",2
+"131","155ª DP - São Sebastião do Alto",0,1,"São Sebastião do Alto","São Sebastião do Alto","","0","",1
+"132","156ª DP - Santa Maria Madalena",0,1,"Santa Maria Madalena","Santa Maria Madalena","","0","",1
+"133","157ª DP - Trajano de Morais",0,1,"Trajano de Morais","Trajano de Morais","","0","",1
+"134","158ª DP - Bom Jardim",0,1,"Bom Jardim","Bom Jardim","","0","",1
+"135","159ª DP - Cachoeira de Macacú",0,1,"Cachoeira de Macacú","Cachoeira de Macacú","","0","",1
+"136","165ª DP - Mangaratiba",0,1,"Mangaratiba","Mangaratiba","","0","",1
+"137","166ª DP - Angra dos Reis",0,1,"Angra dos Reis","Angra dos Reis","","0","",1
+"138","167ª DP - Parati",1,1,"Parati","Parati","","1","",2
+"139","168ª DP - Rio Claro.",0,1,"Rio Claro.","Rio Claro.","","0","",1
