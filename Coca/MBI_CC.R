@@ -32,23 +32,32 @@ MBI2 <- subset(MBI2, select = -c(`Avg. Pack.Size`,`Pack Material`,Flavor,`Calori
 #VERIFICAR A CLASSE DAS VARIAVEIS
 sapply(MBI[,c("Date","Volume","Value","Price")],class)
 MBI$Date <- mdy(MBI$Date)
-MBI$Date <- as.Date(MBI$Date)
+MBI$Date <- as.Date(MBI$Date,origin="1970-01-01")
 
 mercado <- function(){
-  par(2,1)
-  cbind(MBI$Date,scale(MBI[,c("Value","Volume")]))%>%
-  aggregate(by = list(Group.date = MBI$Date), FUN=sum, na.rm=TRUE)%>%
+    MBI_mercado <- MBI[,c("Value","Volume","Date")]
+    MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
+    MBI_mercado <- as.data.frame(MBI_mercado)
+    MBI_mercado%>%
     ggplot() +
-    geom_line(aes(x=Group.date, y = Value, colour = "blue")) +
-    geom_line(aes(x=Group.date, y = Volume, colour = "green")) + 
+    geom_line(aes(x=Date, y = Value, colour = "blue")) +
+    geom_line(aes(x=Date, y = Volume, colour = "green")) + 
     scale_color_discrete(name = "Valores no tempo", labels = c("Valor", "Volume"))  
-    mutate(MBI, Price = Value/Volume)%>%  
-    ggplot() + 
-    geom_point(aes(x=Date, y = Price, colour = "red"))
-    
-    mutate(MBI[,c("Date","Value","Volume")], Price = Value/Volume)%>%
-    aggregate(by = list(Group.date = MBI$Date), FUN=sum, na.rm=TRUE)%>%
-    print()
-}
+    MBI$Year <- year(MBI$Date)
+    MBI$Month <- month(MBI$Date)
+    aggregate(MBI[,c("Value","Volume")], by = list(MBI$Year), FUN = sum)%>%
+      mutate(Price = round(Value / Volume,2))
+    aggregate(MBI[,c("Value","Volume")], by = list(MBI$Month), FUN = sum)%>%
+      mutate(Price = round(Value / Volume,2))
+    }
 mercado()
 
+mercado2 <- function(){
+  par(mfrow=c(1,2))
+  cbind(MBI[,c("Date","Price")],scale(MBI[,c("Value","Volume")]))%>%
+    ggplot() +
+    geom_point(aes(x=Volume, y = Value, colour = "blue", size = Price)) + 
+    ggtitle("Volume x Valor")
+}
+
+mercado2()
