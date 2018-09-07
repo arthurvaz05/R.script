@@ -14,7 +14,7 @@
   require(gridExtra)
   install.packages("devtools")
   library(devtools)
-  devtools::install_github('hadley/ggplot2')
+  devtools::install_github('hadley/ggplot2', force = TRUE)
 }
 
 
@@ -65,15 +65,17 @@ MBI2 <- manipulacao2()
   #CRIACAO DAS FUNCOES DOS GRAFICOS E TABELAS NECESSARIAS PARA ENTENDER O MERCADO
   {
     mercado_grafico1 <- function(){
-      MBI_mercado <- MBI[,c("Value","Volume","Date")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
-      aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)  %>%
+      MBI_mercado1 <- MBI[,c("Value","Volume","Date")]
+      #E PRECISO NORMALIZAR PARA QUE A GRANDEZA FICA NA MESMA ESCALA CASO AO CONTRARIO NAO DA PARA COMPARAR
+      MBI_mercado1[,c("Value","Volume")] <- scale(MBI_mercado1[,c("Value","Volume")])
+      MBI_mercado1 <- as.data.frame(MBI_mercado1)
+      aggregate(MBI_mercado1[,c("Value","Volume")],by = list(MBI_mercado1$Date), FUN = sum)  %>%
         ggplot() +
         geom_smooth(aes(x=Group.1, y = Value, colour = "blue"),show.legend = FALSE) +
         geom_smooth(aes(x=Group.1, y = Volume, colour = "green"),show.legend = FALSE) + 
         scale_color_discrete(name = "Valores no tempo", labels = c("Valor", "Volume"))
     }
+    #GRAFICOS PARA MOSTRAR QUE O PRECO SE MANTEM O MESMO AO LONGO DO TEMPO
     mercado_grafico2 <- function(){
       MBI_mercado <- MBI[,c("Value","Volume","Date")]
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
@@ -94,30 +96,22 @@ MBI2 <- manipulacao2()
         ggplot() +
         geom_point(aes(x=Group.1, y = Value, size = Price)) + ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
     }
+    #NORMALIZAR OS DADOS PARA VER A REAL INFLUENCIA E RELACAO ENTRE VOLUME, VALOR E PRECO
     mercado_grafico4 <- function(){
-      MBI_mercado <- MBI[,c("Value","Volume","Date")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
-      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)
-      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
-      MBI_mercado %>%
-        ggplot() +
-        geom_point(aes(x=Volume, y = Value, size = Price)) + ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
-    }
-    mercado_grafico5 <- function(){
       MBI_mercado <- MBI[,c("Value","Volume","Date","Flavor")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
       MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date,MBI_mercado$Flavor), FUN = sum)
+      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
+      MBI_mercado <- as.data.frame(MBI_mercado)
+      MBI_mercado$Cluster <- ifelse(MBI_mercado$Group.2=="Milk Chocolate",1,2)
+      
       t <- MBI_mercado %>%
         ggplot() +
         geom_point(aes(x=Volume, y = Value, size = Price, fill = Group.2), shape = 21) + 
-        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume)) +
-        scale_size(range = c(1, 10))
+        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
       ggplotly(t)
     }
-    mercado_grafico6 <- function(){
+    mercado_grafico5 <- function(){
       MBI_mercado <- MBI[MBI$Flavor!="Milk Chocolate",c("Value","Volume","Date","Flavor")]
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado <- as.data.frame(MBI_mercado)
@@ -130,33 +124,68 @@ MBI2 <- manipulacao2()
         scale_size(range = c(1, 10))
       ggplotly(t)
     }
-    mercado_grafico7 <- function(){
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$Flavor, MBI$Year, MBI$Month), FUN = sum)
-      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
-      
-      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
-        geom_line(stat='identity') + 
-        facet_grid(Group.2 ~ .)
-      ggplotly(g)
+    #A MESMA INFORMACAO DE CIMA DOS SABORES EM 3 GRAFICOS, POREM SEM ESTAR NORMALIZADO
+    mercado_grafico6 <- function(){
+      MBI_tb <- MBI[,c("Value","Volume","Date","Flavor")]
+      MBI_tb$Month <- month(MBI_tb$Date)
+      MBI_tb <- aggregate(MBI_tb[,c("Value","Volume")], by = list(MBI_tb$Month, MBI_tb$Flavor), FUN = sum)
+      MBI_tb$Price <- MBI_tb$Value/MBI_tb$Volume
+      colnames(MBI_tb) <- c("Month","Flavor","Value","Volume","Price")
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
+      t <- MBI_tb%>%
+        ggplot(aes(y= Valores, x =Flavor, fill = Flavor)) + 
+        geom_bar(stat = "identity") + 
+        facet_wrap(Atributos ~ ., scales = "free") +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=15))
+      ggplotly(t)
     }
-    mercado_grafico72 <- function(){
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$Flavor, MBI$Year, MBI$Month), FUN = sum)
+    #GRAFICO DO TIPO DE EMABALGEM MERCADO
+    mercado_grafico7 <- function(){
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
-      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Volume,colour=Group.1)) + 
+      g <- ggplot(MBI_grafico, aes(x=Month, y=Value,colour=Material)) + 
         geom_line(stat='identity') + 
-        facet_grid(Group.2 ~ .)
+        facet_grid(Year ~ .)  +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_blank(),
+              legend.position="none")
       ggplotly(g)
     }
     mercado_grafico8 <- function(){
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$`Pack Material`, MBI$Year, MBI$Month), FUN = sum)
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
-      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
+      g <- ggplot(MBI_grafico, aes(x=Month, y=Volume,colour=Material)) + 
         geom_line(stat='identity') + 
-        facet_grid(Group.2 ~ .)
-      ggplotly(g)
+        facet_grid(Year ~ .) +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=15),
+              legend.title = element_blank()) +
+              guides(fill=FALSE)
+      ggplotly(g)  %>%
+        layout(legend = list(
+          orientation = "v", x = 1.2, y =0.5
+        )
+        )
     }
+    #
     mercado_grafico9 <- function(){
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$`Caloric Content`, MBI$Year, MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
@@ -211,10 +240,8 @@ MBI2 <- manipulacao2()
   mercado_grafico4()
   mercado_grafico5()
   mercado_grafico6()
-  grid.arrange(mercado_grafico72(), mercado_grafico7(), ncol=2)
-  mercado_grafico7()
-  mercado_grafico72()
-  mercado_grafico8()
+  subplot(mercado_grafico7(),mercado_grafico8())
+  
   mercado_grafico9()
   mercado_grafico10()
   mercado_grafico11()

@@ -119,29 +119,24 @@ For a confirm conclusion about the price, we can note in the 2 chart beloow the 
     grid.arrange(mercado_grafico2(), mercado_grafico3(), ncol=2)
 ```
 
-A quick undestand which Flavor has more impact in the market, easly notice in the graphic bellow the Flavor Milk Chocolate has a huge impact in the market result. So could be interst do different analyses, a cluster of Milk Chocolate and a cluster of another Flavors.
+A quick undestand which Flavor has more impact in the market, easly notice in the graphic bellow the Flavor Milk Chocolate has a huge impact in the market result. So could be interst do different analyses, a cluster of Milk Chocolate and a cluster of another Flavors. Spliting in two cluster and zoom the second one, we can see cherry flavor follow by coffe flavor are most predominant. 
 
 ```{r, echo=FALSE, message=FALSE}
-mercado_grafico5 <- function(){
+mercado_grafico4 <- function(){
       MBI_mercado <- MBI[,c("Value","Volume","Date","Flavor")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
       MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date,MBI_mercado$Flavor), FUN = sum)
+      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
+      MBI_mercado <- as.data.frame(MBI_mercado)
+      MBI_mercado$Cluster <- ifelse(MBI_mercado$Group.2=="Milk Chocolate",1,2)
+      
       t <- MBI_mercado %>%
         ggplot() +
         geom_point(aes(x=Volume, y = Value, size = Price, fill = Group.2), shape = 21) + 
-        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume)) +
-        scale_size(range = c(1, 10))
+        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
       ggplotly(t)
-}
-mercado_grafico5()
-```
-
-Spliting the two cluster, will be better for zoom how is which flavors has the more impact. As we can see cherry flavor follow by coffe flavor are most predominant. 
-
-```{r, echo=FALSE, message=FALSE}
-mercado_grafico6 <- function(){
+    }
+mercado_grafico5 <- function(){
       MBI_mercado <- MBI[MBI$Flavor!="Milk Chocolate",c("Value","Volume","Date","Flavor")]
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado <- as.data.frame(MBI_mercado)
@@ -153,7 +148,33 @@ mercado_grafico6 <- function(){
         ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume)) +
         scale_size(range = c(1, 10))
       ggplotly(t)
+    }
+mercado_grafico4()
+mercado_grafico5()
+```
+
+Now, you can check witouth be normalized. I had to use 3 different graph because the range of values is large, so if try to plot in a single chart, woulb clear the information.
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+mercado_grafico6 <- function(){
+      MBI_tb <- MBI[,c("Value","Volume","Date","Flavor")]
+      MBI_tb$Month <- month(MBI_tb$Date)
+      MBI_tb <- aggregate(MBI_tb[,c("Value","Volume")], by = list(MBI_tb$Month, MBI_tb$Flavor), FUN = sum)
+      MBI_tb$Price <- MBI_tb$Value/MBI_tb$Volume
+      colnames(MBI_tb) <- c("Month","Flavor","Value","Volume","Price")
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
+      t <- MBI_tb%>%
+        ggplot(aes(y= Valores, x =Flavor, fill = Flavor)) + 
+        geom_bar(stat = "identity") + 
+        facet_wrap(Atributos ~ ., scales = "free") +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=15))
+      ggplotly(t)
 }
 mercado_grafico6()
 ```
-
