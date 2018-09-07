@@ -1,0 +1,70 @@
+---
+title: "Coca_analyse"
+author: "Arthur Lamblet Vaz"
+date: "9/7/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+  #install.packages("rmarkdown")
+  library(rmarkdown)
+  library(readr)
+  library(tidyverse)  
+  library(lubridate)
+  library(plotly)
+  library(readxl)
+  #install.packages("prophet")
+  library(prophet)
+  #install.packages('Metrics')
+  library('Metrics')
+```
+
+<center>
+![](https://upload.wikimedia.org/wikipedia/commons/d/d4/Coca-Cola_Brasil_logo.png)
+</center>
+
+##The Situation:
+- You work for a consultant company on the date of December 2017 and a beverages company hired your Analytical service.
+
+##They wanted you to provide:
+- A descriptive diagnosis of how this industry is performing through different lenses (**Producers**, **Brands**, **Packages**, **Pricing**)
+- A 6-month forecast of volume sales for Brazil to both industry and Producers (From Jan/18 to Jun/18).
+
+```{r }
+MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
+                  col_types = c("date", "text", "text", 
+                                "text", "text", "numeric", "text", 
+                                "numeric", "numeric", "numeric", 
+                                "numeric"))
+```
+
+## Market analyse
+
+First and foremost, I will make a quickly analyse of brazilian market. This analyse will help me to choose which direction will be better to follow, as I have a short time to try as many way possible. 
+In the firs moment we just have done a data mining to preprer the data for forecast analyse.   
+
+```{r pressure, echo=FALSE}
+#CRIACAO DE VALORES, MUDANCA DE CLASSES SERAM FEITAS DENTRO DESSA FUNCAO
+manipulacao <- function(){
+  #ADICIONAR A VARIAVEL MES
+  MBI$Month <- month(MBI$Date)
+  #ADICIONAR A VARIAVEL ANO
+  MBI$Year <- year(MBI$Date)
+  #VERIFICAR A CLASSE DAS VARIAVEIS
+  lapply(MBI[,c("Date","Volume","Value")],class)
+  #ADICIONAR A VARIAVEL PRECO
+  MBI$Volume <- round(as.numeric(gsub(",", ".", gsub("\\.", "", MBI$Volume))),2)
+  MBI$Value <- round(as.numeric(gsub(",", ".", gsub("\\.", "", MBI$Value))),2)
+  MBI$Price <- round(with(MBI, Value/Volume),2)
+  #CATEGORIZAR AVG PACK SIZE POR 1Q/MEDIANA/3Q
+  summary(MBI$`Avg. Pack.Size`)
+  boxplot(MBI$`Avg. Pack.Size`)
+  MBI$AVG_PS <- with(MBI, ifelse(`Avg. Pack.Size` <= 61, "MUITO PEQUENO",
+                                 ifelse(`Avg. Pack.Size`>61 & `Avg. Pack.Size`<=67,"PEQUENO",
+                                        ifelse(`Avg. Pack.Size`>67 & `Avg. Pack.Size`<=80,"GRANDE","MUITO GRANDE"))))  
+  return(MBI)
+}
+MBI <- manipulacao()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
