@@ -137,3 +137,23 @@ mercado_grafico5 <- function(){
 }
 mercado_grafico5()
 ```
+
+Spliting the two cluster, will be better for zoom how is which flavors has the more impact. As we can see cherry flavor follow by coffe flavor are most predominant. 
+
+```{r, echo=FALSE, message=FALSE}
+mercado_grafico6 <- function(){
+      MBI_mercado <- MBI[MBI$Flavor!="Milk Chocolate",c("Value","Volume","Date","Flavor")]
+      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
+      MBI_mercado <- as.data.frame(MBI_mercado)
+      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date,MBI_mercado$Flavor), FUN = sum)
+      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
+      t <- MBI_mercado %>%
+        ggplot() +
+        geom_point(aes(x=Volume, y = Value, size = Price, fill = Group.2), shape = 21) + 
+        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume)) +
+        scale_size(range = c(1, 10))
+      ggplotly(t)
+}
+mercado_grafico6()
+```
+

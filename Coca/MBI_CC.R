@@ -1,6 +1,6 @@
 #BIBLIOTECAS
 {
-  install.packages("rmarkdown")
+  #install.packages("rmarkdown")
   library(rmarkdown)
   library(readr)
   library(tidyverse)  
@@ -11,6 +11,10 @@
   library(prophet)
   #install.packages('Metrics')
   library('Metrics')
+  require(gridExtra)
+  install.packages("devtools")
+  library(devtools)
+  devtools::install_github('hadley/ggplot2')
 }
 
 
@@ -66,8 +70,8 @@ MBI2 <- manipulacao2()
       MBI_mercado <- as.data.frame(MBI_mercado)
       aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)  %>%
         ggplot() +
-        geom_smooth(aes(x=Group.1, y = Value, colour = "blue")) +
-        geom_smooth(aes(x=Group.1, y = Volume, colour = "green")) + 
+        geom_smooth(aes(x=Group.1, y = Value, colour = "blue"),show.legend = FALSE) +
+        geom_smooth(aes(x=Group.1, y = Volume, colour = "green"),show.legend = FALSE) + 
         scale_color_discrete(name = "Valores no tempo", labels = c("Valor", "Volume"))
     }
     mercado_grafico2 <- function(){
@@ -135,6 +139,15 @@ MBI2 <- manipulacao2()
         facet_grid(Group.2 ~ .)
       ggplotly(g)
     }
+    mercado_grafico72 <- function(){
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$Flavor, MBI$Year, MBI$Month), FUN = sum)
+      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
+      
+      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Volume,colour=Group.1)) + 
+        geom_line(stat='identity') + 
+        facet_grid(Group.2 ~ .)
+      ggplotly(g)
+    }
     mercado_grafico8 <- function(){
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$`Pack Material`, MBI$Year, MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
@@ -194,12 +207,13 @@ MBI2 <- manipulacao2()
   }
   #GRAFICO 1 MOSTRA AS VARIAVEIS DE VOLUME E VALOR DENTRO DA MESMA ESCALA DO MERCADO, A PARTIR DO PONTO DE INTERSECAO O COMPORTAMENTO DO MERCADO MUDOU ONDE O DECRESCIMO DO VALOR NAO ACOMPANHA O DECRESCIMO DO VOLUME
   mercado_grafico1()
-  mercado_grafico2()
-  mercado_grafico3()
+  grid.arrange(mercado_grafico2(), mercado_grafico3(), ncol=2)
   mercado_grafico4()
   mercado_grafico5()
   mercado_grafico6()
+  grid.arrange(mercado_grafico72(), mercado_grafico7(), ncol=2)
   mercado_grafico7()
+  mercado_grafico72()
   mercado_grafico8()
   mercado_grafico9()
   mercado_grafico10()
