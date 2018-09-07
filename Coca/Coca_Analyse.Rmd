@@ -17,6 +17,7 @@ output: html_document
   library(prophet)
   #install.packages('Metrics')
   library('Metrics')
+  require(gridExtra)
 ```
 
 <center>
@@ -30,7 +31,7 @@ output: html_document
 - A descriptive diagnosis of how this industry is performing through different lenses (**Producers**, **Brands**, **Packages**, **Pricing**)
 - A 6-month forecast of volume sales for Brazil to both industry and Producers (From Jan/18 to Jun/18).
 
-```{r }
+```{r , echo=FALSE}
 MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
                   col_types = c("date", "text", "text", 
                                 "text", "text", "numeric", "text", 
@@ -42,6 +43,12 @@ MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx",
 
 First and foremost, I will make a quickly analyse of brazilian market. This analyse will help me to choose which direction will be better to follow, as I have a short time to try as many way possible. 
 In the firs moment we just have done a data mining to preprer the data for forecast analyse.   
+Remark about how I create group of Avarage Pack Size, I used a boxplot to set the size of each group.
+
+- Less than First Quartil and greater than minimum Avarage Pack Size  = Muito pequeno
+- Greater than First Quartil and less than Median = Pequeno
+- Greater than Median and less than Second Quartil = Grande
+- Greater than Second Quartil and less than maximium Avarage Pack Size = Muito Grande
 
 ```{r pressure, echo=FALSE}
 #CRIACAO DE VALORES, MUDANCA DE CLASSES SERAM FEITAS DENTRO DESSA FUNCAO
@@ -59,12 +66,74 @@ manipulacao <- function(){
   #CATEGORIZAR AVG PACK SIZE POR 1Q/MEDIANA/3Q
   summary(MBI$`Avg. Pack.Size`)
   boxplot(MBI$`Avg. Pack.Size`)
-  MBI$AVG_PS <- with(MBI, ifelse(`Avg. Pack.Size` <= 61, "MUITO PEQUENO",
+  text(y = boxplot.stats(MBI$`Avg. Pack.Size`)$stats, labels = boxplot.stats(MBI$`Avg. Pack.Size`)$stats, x = 1.25)
+  MBI$AVG_PS <- with(MBI, ifelse(`Avg. Pack.Size` <= 61 & `Avg. Pack.Size` >=48, "MUITO PEQUENO",
                                  ifelse(`Avg. Pack.Size`>61 & `Avg. Pack.Size`<=67,"PEQUENO",
-                                        ifelse(`Avg. Pack.Size`>67 & `Avg. Pack.Size`<=80,"GRANDE","MUITO GRANDE"))))  
+                                        ifelse(`Avg. Pack.Size`>67 & `Avg. Pack.Size`<=80,"GRANDE",
+                                               ifelse(`Avg. Pack.Size`> 80 & `Avg. Pack.Size`<=84,"MUITO GRANDE","OUTLIER")))))  
   return(MBI)
 }
 MBI <- manipulacao()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+The first graphic bellow ,volume and value normalized, helps us to undestand the moviment of market. In 2016, the volume market sharply drecrease more than the value market, even drecrease less than before as you can note the blue line slope. 
+One of my issue after June 2016 is the price may impact the volume, the red line is almost flat.
+
+```{r , echo=FALSE, message=FALSE}
+mercado_grafico1 <- function(){
+      MBI_mercado <- MBI[,c("Value","Volume","Date")]
+      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
+      MBI_mercado <- as.data.frame(MBI_mercado)
+      aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)  %>%
+        ggplot() +
+        geom_smooth(aes(x=Group.1, y = Value, colour = "blue")) +
+        geom_smooth(aes(x=Group.1, y = Volume, colour = "green")) + 
+        scale_color_discrete(name = "Valores no tempo", labels = c("Valor", "Volume"))
+}
+mercado_grafico1()
+```
+
+For a confirm conclusion about the price, we can note in the 2 chart beloow the size of point which mean the price, did not change pasting time.
+
+```{r, echo=FALSE, message=FALSE}
+    mercado_grafico2 <- function(){
+      MBI_mercado <- MBI[,c("Value","Volume","Date")]
+      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
+      MBI_mercado <- as.data.frame(MBI_mercado)
+      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)
+      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
+      MBI_mercado %>%
+        ggplot() +
+        geom_point(aes(x=Group.1, y = Volume, size = Price)) + ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
+    }
+    mercado_grafico3 <- function(){
+      MBI_mercado <- MBI[,c("Value","Volume","Date")]
+      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
+      MBI_mercado <- as.data.frame(MBI_mercado)
+      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)
+      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
+      MBI_mercado %>%
+        ggplot() +
+        geom_point(aes(x=Group.1, y = Value, size = Price)) + ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
+    }
+    grid.arrange(mercado_grafico2(), mercado_grafico3(), ncol=2)
+```
+
+A quick undestand which Flavor has more impact in the market, easly notice in the graphic bellow the Flavor Milk Chocolate has a huge impact in the market result. So could be interst do different analyses, a cluster of Milk Chocolate and a cluster of another Flavors.
+
+```{r, echo=FALSE, message=FALSE}
+mercado_grafico5 <- function(){
+      MBI_mercado <- MBI[,c("Value","Volume","Date","Flavor")]
+      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
+      MBI_mercado <- as.data.frame(MBI_mercado)
+      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date,MBI_mercado$Flavor), FUN = sum)
+      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
+      t <- MBI_mercado %>%
+        ggplot() +
+        geom_point(aes(x=Volume, y = Value, size = Price, fill = Group.2), shape = 21) + 
+        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume)) +
+        scale_size(range = c(1, 10))
+      ggplotly(t)
+}
+mercado_grafico5()
+```
