@@ -178,3 +178,141 @@ mercado_grafico6 <- function(){
 }
 mercado_grafico6()
 ```
+
+Analysing the material market, as easy to realise the plastic predominant, the clomun chart on the left is the value market and on the right volume market by material package. In the end of 2017 seems exist a inverse correlation or just a casuality because the campaing agains plastics are inrease nowadays.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+mercado_grafico7 <- function(){
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
+      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
+      
+      g <- ggplot(MBI_grafico, aes(x=Month, y=Value,colour=Material)) + 
+        geom_line(stat='identity') + 
+        facet_grid(Year ~ .)  +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_blank(),
+              legend.position="none")
+      ggplotly(g)
+    }
+mercado_grafico8 <- function(){
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
+      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
+      
+      g <- ggplot(MBI_grafico, aes(x=Month, y=Volume,colour=Material)) + 
+        geom_line(stat='identity') + 
+        facet_grid(Year ~ .) +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=10),
+              legend.title = element_blank()) +
+              guides(fill=FALSE)
+      ggplotly(g)  %>%
+        layout(legend = list(
+          orientation = "v", x = 1.1, y =0.5
+        )
+        )
+}
+subplot(mercado_grafico7(),mercado_grafico8())
+```
+
+The caloric content always have been dominated by sugar, the graphic bellow can prove this sentence.
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+mercado_grafico9 <- function(){
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list('Caloric Content' = MBI$`Caloric Content`, Year = MBI$Year, Month = MBI$Month), FUN = sum)
+      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
+      
+      g <- ggplot(MBI_grafico, aes(x=Month, y=Value,colour=`Caloric Content`)) + 
+        geom_line(stat='identity') + 
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=10),
+              legend.title = element_blank()) +
+        facet_grid(Year ~ .) 
+      ggplotly(g)%>%
+        layout(legend = list(
+          orientation = "v", x = 1.1, y =0.5
+        )
+        )
+    }
+mercado_grafico9()
+```
+
+The market has two type of size package that lead the other.
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+mercado_grafico10 <- function(){
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$AVG_PS, MBI$Year, MBI$Month), FUN = sum)
+      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
+      
+      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
+        geom_line(stat='identity') + 
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=10),
+              legend.title = element_blank()) +
+        facet_grid(Group.2 ~ .)
+      ggplotly(g)%>%
+        layout(legend = list(
+          orientation = "v", x = 1.1, y =0.5
+        )
+        )
+}
+mercado_grafico10()
+```
+
+
+
+After understand the market, we can set the categories more influencer for run the forecast model, is usual help in the computer performance because will work with less data.
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+mercado_month <- function(){
+      MBI$Month <- month(MBI$Date)
+      aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Month), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+    }
+    mercado_year <- function(){
+      MBI$Year <- year(MBI$Date)
+      aggregate(MBI[,c("Value","Volume")], by = list(Year =MBI$Year), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+    } 
+    grid.arrange(tableGrob(mercado_year(), rows = NULL),
+               tableGrob(mercado_month(), rows = NULL), nrow = 1)
+    mercado_grafico11 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Year), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
+      t <- MBI_tb%>%
+        ggplot(aes(y= Valores, x =Month)) + 
+        geom_line(stat = "identity") +
+        facet_wrap(Atributos~ ., scales = "free") + 
+        theme_bw() +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_text(angle = 90, hjust = 1),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text=element_text(hjust=-100))
+      ggplotly(t)
+    }
+    mercado_grafico11()
+```

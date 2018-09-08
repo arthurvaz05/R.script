@@ -14,7 +14,7 @@
   require(gridExtra)
   install.packages("devtools")
   library(devtools)
-  devtools::install_github('hadley/ggplot2', force = TRUE)
+  #devtools::install_github('hadley/ggplot2', force = TRUE)
 }
 
 
@@ -64,6 +64,7 @@ MBI2 <- manipulacao2()
 {
   #CRIACAO DAS FUNCOES DOS GRAFICOS E TABELAS NECESSARIAS PARA ENTENDER O MERCADO
   {
+    #GRAFICO NORMALIZADO DO VOLUME E VALOR NO TEMPO
     mercado_grafico1 <- function(){
       MBI_mercado1 <- MBI[,c("Value","Volume","Date")]
       #E PRECISO NORMALIZAR PARA QUE A GRANDEZA FICA NA MESMA ESCALA CASO AO CONTRARIO NAO DA PARA COMPARAR
@@ -176,79 +177,108 @@ MBI2 <- manipulacao2()
               axis.title.y=element_blank(),
               axis.text.y=element_blank(),
               axis.ticks.y=element_blank(),
-              strip.text = element_text(size=15),
+              strip.text = element_text(size=10),
               legend.title = element_blank()) +
               guides(fill=FALSE)
       ggplotly(g)  %>%
         layout(legend = list(
-          orientation = "v", x = 1.2, y =0.5
+          orientation = "v", x = 1.1, y =0.5
         )
         )
     }
-    #
+    #GRAFICO DE TEOR CALORICO
     mercado_grafico9 <- function(){
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$`Caloric Content`, MBI$Year, MBI$Month), FUN = sum)
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list('Caloric Content' = MBI$`Caloric Content`, Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
-      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
+      g <- ggplot(MBI_grafico, aes(x=Month, y=Value,colour=`Caloric Content`)) + 
         geom_line(stat='identity') + 
-        facet_grid(Group.2 ~ .)
-      ggplotly(g)
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=10),
+              legend.title = element_blank()) +
+        facet_grid(Year ~ .) 
+      ggplotly(g)%>%
+        layout(legend = list(
+          orientation = "v", x = 1.1, y =0.5
+        )
+        )
     }
+    #GRAFICO POR TAMANHO DO PACOTE
     mercado_grafico10 <- function(){
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$AVG_PS, MBI$Year, MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
       g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
         geom_line(stat='identity') + 
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text = element_text(size=10),
+              legend.title = element_blank()) +
         facet_grid(Group.2 ~ .)
-      ggplotly(g)
+      ggplotly(g)%>%
+        layout(legend = list(
+          orientation = "v", x = 1.1, y =0.5
+        )
+        )
     }
-    mercado_grafico11 <- function(){
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$Brand, MBI$Year, MBI$Month), FUN = sum)
-      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
-      
-      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
-        geom_line(stat='identity') + 
-        facet_grid(Group.2 ~ .)
-      ggplotly(g)
-    }
-    mercado_grafico12 <- function(){
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$Producer, MBI$Year, MBI$Month), FUN = sum)
-      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
-      
-      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
-        geom_line(stat='identity') + 
-        facet_grid(Group.2 ~ .)
-      ggplotly(g)
-    }
+    #TABELA AGRUPADA DO VALOR, VOLUME E PRECO POR ANO E MES
     mercado_month <- function(){
       MBI$Month <- month(MBI$Date)
-      aggregate(MBI[,c("Value","Volume")], by = list(MBI$Month), FUN = sum)%>%
+      aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Month), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
-      
+    }
+    mercado_grafico11 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Year), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
+      t <- MBI_tb%>%
+        ggplot(aes(y= Valores, x =Month)) + 
+        geom_line(stat = "identity") +
+        facet_wrap(Atributos~ ., scales = "free") + 
+        theme_bw() +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_text(angle = 90, hjust = 1),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              strip.text=element_text(hjust=-100))
+      ggplotly(t)
     }
     mercado_year <- function(){
       MBI$Year <- year(MBI$Date)
-      aggregate(MBI[,c("Value","Volume")], by = list(MBI$Year), FUN = sum)%>%
+      aggregate(MBI[,c("Value","Volume")], by = list(Year =MBI$Year), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
-    }  
+    } 
   }
-  #GRAFICO 1 MOSTRA AS VARIAVEIS DE VOLUME E VALOR DENTRO DA MESMA ESCALA DO MERCADO, A PARTIR DO PONTO DE INTERSECAO O COMPORTAMENTO DO MERCADO MUDOU ONDE O DECRESCIMO DO VALOR NAO ACOMPANHA O DECRESCIMO DO VOLUME
-  mercado_grafico1()
-  grid.arrange(mercado_grafico2(), mercado_grafico3(), ncol=2)
-  mercado_grafico4()
-  mercado_grafico5()
-  mercado_grafico6()
-  subplot(mercado_grafico7(),mercado_grafico8())
+  #ATIVAR AS FUNCOES DOS GRAFICOS E TABLEAS
+  {
+    mercado_grafico1()
+    grid.arrange(mercado_grafico2(), mercado_grafico3(), ncol=2)
+    mercado_grafico4()
+    mercado_grafico5()
+    mercado_grafico6()
+    subplot(mercado_grafico7(),mercado_grafico8())
+    mercado_grafico9()
+    mercado_grafico10()
+    grid.arrange(tableGrob(mercado_year(), rows = NULL),
+                 tableGrob(mercado_month(), rows = NULL), nrow = 1)
+    subplot(mercado_grafico11(),mercado_grafico12())
+  }
   
-  mercado_grafico9()
-  mercado_grafico10()
-  mercado_grafico11()
-  mercado_grafico12()
-  mercado_month()
-  mercado_year()  
 }
+
+
 #MODELO PREDITIVO GLOBAL
 {
   MBI2 <- MBI2[!is.na(MBI2$Value),]
@@ -289,9 +319,3 @@ MBI2 <- manipulacao2()
 }
 #https://towardsdatascience.com/using-open-source-prophet-package-to-make-future-predictions-in-r-ece585b73687
 #https://peerj.com/preprints/3190.pdf
-#CONECTAR AO PLOTLY SERVER
-Sys.setenv("plotly_username"="arthurvaz05")
-Sys.setenv("plotly_api_key"="Hdu9o6uH7CQcZ6pwXpsb")
-api_create(mercado_grafico12(), filename = "r-docs-midwest-boxplots")
-plotly_IMAGE(mercado_grafico12(), format = "png", out_file = "output.png")
-
