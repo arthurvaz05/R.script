@@ -15,6 +15,11 @@
   install.packages("devtools")
   library(devtools)
   #devtools::install_github('hadley/ggplot2', force = TRUE)
+  #install.packages("corrplot")
+  library(corrplot)
+  library("Hmisc")
+  #install.packages("PerformanceAnalytics")
+  library("PerformanceAnalytics")
 }
 
 
@@ -153,6 +158,7 @@ MBI2 <- manipulacao2()
       
       g <- ggplot(MBI_grafico, aes(x=Month, y=Value,colour=Material)) + 
         geom_line(stat='identity') + 
+        ggtitle("Value") + 
         facet_grid(Year ~ .)  +
         theme(axis.title.x=element_blank(),
               axis.text.x=element_blank(),
@@ -160,8 +166,7 @@ MBI2 <- manipulacao2()
               axis.title.y=element_blank(),
               axis.text.y=element_blank(),
               axis.ticks.y=element_blank(),
-              strip.text = element_blank(),
-              legend.position="none")
+              strip.text = element_blank())
       ggplotly(g)
     }
     mercado_grafico8 <- function(){
@@ -170,6 +175,7 @@ MBI2 <- manipulacao2()
       
       g <- ggplot(MBI_grafico, aes(x=Month, y=Volume,colour=Material)) + 
         geom_line(stat='identity') + 
+        ggtitle("Volume") +
         facet_grid(Year ~ .) +
         theme(axis.title.x=element_blank(),
               axis.text.x=element_blank(),
@@ -177,8 +183,7 @@ MBI2 <- manipulacao2()
               axis.title.y=element_blank(),
               axis.text.y=element_blank(),
               axis.ticks.y=element_blank(),
-              strip.text = element_text(size=10),
-              legend.title = element_blank()) +
+              strip.text = element_text(size=10)) +
               guides(fill=FALSE)
       ggplotly(g)  %>%
         layout(legend = list(
@@ -230,36 +235,175 @@ MBI2 <- manipulacao2()
         )
         )
     }
-    #TABELA AGRUPADA DO VALOR, VOLUME E PRECO POR ANO E MES
+    #GRAFICO E TABELA AGRUPADA DO VALOR, VOLUME, PRECO
     mercado_month <- function(){
       MBI$Month <- month(MBI$Date)
       aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Month), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
-    }
-    mercado_grafico11 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Year), FUN = sum)%>%
-        mutate(Price = round(Value / Volume,2))
-      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
-      t <- MBI_tb%>%
-        ggplot(aes(y= Valores, x =Month)) + 
-        geom_line(stat = "identity") +
-        facet_wrap(Atributos~ ., scales = "free") + 
-        theme_bw() +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_text(angle = 90, hjust = 1),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.text.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              strip.text=element_text(hjust=-100))
-      ggplotly(t)
     }
     mercado_year <- function(){
       MBI$Year <- year(MBI$Date)
       aggregate(MBI[,c("Value","Volume")], by = list(Year =MBI$Year), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
     } 
+    mercado_grafico11 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
+      t <- MBI_tb[MBI_tb$Atributos=="Volume",]%>%
+        ggplot(aes(y= Valores, x =Month)) + 
+        geom_line(stat = "identity") +
+        ggtitle("Volume") +
+        facet_grid(Year ~ ., scales = "free")+ 
+        theme_bw() +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_text(angle = 90, hjust = 1),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              plot.title = element_text(hjust = 0.5)) + 
+        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) +
+        scale_y_continuous(labels = scales::comma)
+      t
+    }
+    mercado_grafico12 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
+      t <- MBI_tb[MBI_tb$Atributos=="Value",]%>%
+        ggplot(aes(y= Valores, x =Month)) + 
+        geom_line(stat = "identity") +
+        ggtitle("Value") +
+        facet_grid(Year ~ ., scales = "free")+ 
+        theme_bw() +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_text(angle = 90, hjust = 1),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              plot.title = element_text(hjust = 0.5)) + 
+        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) +
+        scale_y_continuous(labels = scales::comma)
+      t
+    }
+    mercado_grafico13 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
+      t <- MBI_tb[MBI_tb$Atributos=="Price",]%>%
+        ggplot(aes(y= Valores, x =Month)) + 
+        geom_line(stat = "identity") +
+        ggtitle("Price") +
+        facet_grid(Year ~ ., scales = "free")+ 
+        theme_bw() +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_text(angle = 90, hjust = 1),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              plot.title = element_text(hjust = 0.5))  +
+        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) +
+        scale_y_continuous(labels = scales::comma)
+      t
+    }
+    #GRAFICO COBERTURA E SHELFLIFE POR ANO E MES
+    mercado_grafico14 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Coverage)
+      t <- MBI_tb[MBI_tb$Atributos=="Coverage",]%>%
+        ggplot(aes(y= Valores, x =Month)) + 
+        geom_line(stat = "identity") +
+        ggtitle("Coverage") +
+        facet_grid(Year ~ ., scales = "free")+ 
+        theme_bw() +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_text(angle = 90, hjust = 1),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              plot.title = element_text(hjust = 0.5)) + 
+        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) 
+      t
+    }
+    mercado_grafico15 <- function(){
+      x <- density(MBI$Coverage, na.rm = TRUE)
+      hist(MBI$Coverage, main = "Coverage Histogram")
+      plot(x, main = "Coverage Kernel Distribution")
+    }
+    mercado_grafico16 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Shelf_Availability)
+      t <- MBI_tb[MBI_tb$Atributos=="Shelf_Availability",]%>%
+        ggplot(aes(y= Valores, x =Month)) + 
+        geom_line(stat = "identity") +
+        ggtitle("Shelf_Availability") +
+        facet_grid(Year ~ ., scales = "free")+ 
+        theme_bw() +
+        theme(axis.title.x=element_blank(),
+              axis.text.x=element_text(angle = 90, hjust = 1),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.ticks.y=element_blank(),
+              plot.title = element_text(hjust = 0.5)) + 
+        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) 
+      t
+    }
+    mercado_grafico17 <- function(){
+      x <- density(MBI$Shelf_Availability, na.rm = TRUE)
+      par(mfrow=c(2,1))
+      y <- hist(MBI$Coverage, main = "Shelf Availability Histogram")
+      x1 <- plot(x, main = "Shelf Availability Kernel Distribution")
+    }
+    #GRAFICO DE CORRELACAO DO VALOR, VOLUME, PRECO, COBERTURA E SHELFLIFE
+    mercado_grafico18 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb1 <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb2 <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb3 <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- dplyr::left_join(MBI_tb3,MBI_tb2, by = c('Month','Year'))
+      MBI_tb <- dplyr::left_join(MBI_tb,MBI_tb1, by = c('Month','Year'))
+      res <- round(cor(MBI_tb[,c("Coverage","Shelf_Availability","Value","Volume","Price")]),2)
+      par(mfrow=c(1,1))
+      corrplot(res, type = "upper", order = "hclust", 
+               tl.col = "black", tl.srt = 45)
+    }
+    mercado_grafico19 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb1 <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb2 <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb3 <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- dplyr::left_join(MBI_tb3,MBI_tb2, by = c('Month','Year'))
+      MBI_tb <- dplyr::left_join(MBI_tb,MBI_tb1, by = c('Month','Year'))
+      res2 <- rcorr(as.matrix(MBI_tb[,c("Coverage","Shelf_Availability","Value","Volume","Price")]))
+      par(mfrow=c(1,1))
+      corrplot(res2$r, type="upper", order="hclust", 
+               p.mat = res2$P, sig.level = 0.05, insig = "blank")  
+    }
+    mercado_grafico20 <- function(){
+      MBI$Month <- month(MBI$Date)
+      MBI$Year <- year(MBI$Date)
+      MBI_tb1 <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb2 <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
+      MBI_tb3 <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
+        mutate(Price = round(Value / Volume,2))
+      MBI_tb <- dplyr::left_join(MBI_tb3,MBI_tb2, by = c('Month','Year'))
+      MBI_tb <- dplyr::left_join(MBI_tb,MBI_tb1, by = c('Month','Year'))
+      chart.Correlation(MBI_tb[,c("Coverage","Shelf_Availability","Value","Volume","Price")], histogram=TRUE, pch=19)
+    }
   }
   #ATIVAR AS FUNCOES DOS GRAFICOS E TABLEAS
   {
@@ -273,7 +417,16 @@ MBI2 <- manipulacao2()
     mercado_grafico10()
     grid.arrange(tableGrob(mercado_year(), rows = NULL),
                  tableGrob(mercado_month(), rows = NULL), nrow = 1)
-    subplot(mercado_grafico11(),mercado_grafico12())
+    mercado_grafico11()
+    mercado_grafico12()
+    mercado_grafico13()
+    mercado_grafico14()
+    mercado_grafico15()
+    mercado_grafico16()
+    mercado_grafico17()
+    mercado_grafico18()
+    mercado_grafico19()
+    mercado_grafico20()
   }
   
 }
