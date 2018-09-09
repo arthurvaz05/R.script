@@ -669,7 +669,7 @@ forecast_grafico1()
 
 I adopt the RSME and MAPE for valueate the model result. The dataset is not big enough to give a confident accuracy, I would need a compute more powerfull for consider a large dataset.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast_erro1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
@@ -704,9 +704,12 @@ forecast_erro1 <- function(){
         "rmse" = rmse(test$Volume.x,test$Volume.y)
       )
       d <- as.data.frame(d)
-      grid.table(d,rows=NULL)
     } 
-forecast_erro1()
+d <- forecast_erro1()
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+grid.table(d,rows=NULL)
 ```
 
 ###Cherry
@@ -826,7 +829,7 @@ forecast_grafico1()
 
 The model forecast get a good error result.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast_erro1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Harley",]
@@ -861,9 +864,12 @@ forecast_erro1 <- function(){
         "rmse" = rmse(test$Volume.x,test$Volume.y)
       )
       d <- as.data.frame(d)
-      grid.table(d,rows=NULL)
     } 
-forecast_erro1()
+d <- forecast_erro1()
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+grid.table(d,rows=NULL)
 ```
 
 ###Coffee
@@ -936,7 +942,7 @@ mercado_grafico31 <- function(){
 }
 
 mercado_grafico29()
-mercado_grafico30()
+mercado_grafico31()
 ```
 
 
@@ -983,7 +989,7 @@ forecast_grafico1()
 
 The model forecast get a good error result.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast_erro1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Eshan",]
@@ -1018,9 +1024,13 @@ forecast_erro1 <- function(){
         "rmse" = rmse(test$Volume.x,test$Volume.y)
       )
       d <- as.data.frame(d)
-      grid.table(d,rows=NULL)
     } 
-forecast_erro1()
+d <- forecast_erro1()
+```
+
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+grid.table(d,rows=NULL)
 ```
 
 ##Forward Studies
