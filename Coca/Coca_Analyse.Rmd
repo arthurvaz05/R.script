@@ -39,28 +39,26 @@ output: html_document
 - A descriptive diagnosis of how this industry is performing through different lenses (**Producers**, **Brands**, **Packages**, **Pricing**)
 - A 6-month forecast of volume sales for Brazil to both industry and Producers (From Jan/18 to Jun/18).
 
-```{r , echo=FALSE}
-MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
-                  col_types = c("date", "text", "text", 
-                                "text", "text", "numeric", "text", 
-                                "numeric", "numeric", "numeric", 
-                                "numeric"))
-```
-
 ## Market analyse
 
 First and foremost, I will make a quickly analyse of brazilian market. This analyse will help me to choose which direction will be better to follow, as I have a short time to try as many way possible. 
 In the firs moment we just have done a data mining to preprer the data for forecast analyse.   
 Remark about how I create group of Avarage Pack Size, I used a boxplot to set the size of each group.
 
-- Less than First Quartil and greater than minimum Avarage Pack Size  = Muito pequeno
-- Greater than First Quartil and less than Median = Pequeno
-- Greater than Median and less than Second Quartil = Grande
-- Greater than Second Quartil and less than maximium Avarage Pack Size = Muito Grande
+- Less than First Quartil and greater than minimum Avarage Pack Size  = VERY SMALL
+- Greater than First Quartil and less than Median = SMALL
+- Greater than Median and less than Second Quartil = BIG
+- Greater than Second Quartil and less than maximium Avarage Pack Size = VERY BIG
 
 ```{r pressure, echo=FALSE}
 #CRIACAO DE VALORES, MUDANCA DE CLASSES SERAM FEITAS DENTRO DESSA FUNCAO
 manipulacao <- function(){
+  #CARREGAR TABELA EXCEL
+  MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
+                    col_types = c("date", "text", "text", 
+                                  "text", "text", "numeric", "text", 
+                                  "numeric", "numeric", "numeric", 
+                                  "numeric"))
   #ADICIONAR A VARIAVEL MES
   MBI$Month <- month(MBI$Date)
   #ADICIONAR A VARIAVEL ANO
@@ -71,17 +69,66 @@ manipulacao <- function(){
   MBI$Volume <- round(as.numeric(gsub(",", ".", gsub("\\.", "", MBI$Volume))),2)
   MBI$Value <- round(as.numeric(gsub(",", ".", gsub("\\.", "", MBI$Value))),2)
   MBI$Price <- round(with(MBI, Value/Volume),2)
+  MBI$AVG_PS <- with(MBI, ifelse(`Avg. Pack.Size` <= 61 & `Avg. Pack.Size` >=48, "VERY SMALL",
+                                 ifelse(`Avg. Pack.Size`>61 & `Avg. Pack.Size`<=67,"SMALL",
+                                        ifelse(`Avg. Pack.Size`>67 & `Avg. Pack.Size`<=80,"BIG",
+                                               ifelse(`Avg. Pack.Size`> 80 & `Avg. Pack.Size`<=84,"VERY BIG","OUTLIER")))))
+  return(MBI)
+}
+boxplot_grafico <- function(){
+  MBI <- manipulacao()
   #CATEGORIZAR AVG PACK SIZE POR 1Q/MEDIANA/3Q
   summary(MBI$`Avg. Pack.Size`)
   boxplot(MBI$`Avg. Pack.Size`)
   text(y = boxplot.stats(MBI$`Avg. Pack.Size`)$stats, labels = boxplot.stats(MBI$`Avg. Pack.Size`)$stats, x = 1.25)
-  MBI$AVG_PS <- with(MBI, ifelse(`Avg. Pack.Size` <= 61 & `Avg. Pack.Size` >=48, "MUITO PEQUENO",
-                                 ifelse(`Avg. Pack.Size`>61 & `Avg. Pack.Size`<=67,"PEQUENO",
-                                        ifelse(`Avg. Pack.Size`>67 & `Avg. Pack.Size`<=80,"GRANDE",
-                                               ifelse(`Avg. Pack.Size`> 80 & `Avg. Pack.Size`<=84,"MUITO GRANDE","OUTLIER")))))  
-  return(MBI)
 }
-MBI <- manipulacao()
+#PARETO E PARETO CHART
+pareto <- function(x,y){
+  #PRIMEIRO ARGUMENTO E O CONJUNTO DE DADOS
+  #SEGUNDO A VARIAVEL PARA FAZER O PARETO
+  d <- arrange(x, desc(y)) %>%
+    mutate(
+      cumsum = cumsum(y),
+      freq = round(y / sum(y), 3),
+      cum_freq = cumsum(freq)
+    )
+  return(d)
+}
+pareto_grafico <- function(x,y,z){
+  d <- pareto(x,y)
+  ## Saving Parameters 
+  def_par <- par() 
+  
+  # New margins
+  par(mar=c(5,5,4,5)) 
+  
+  ## plot bars, pc will hold x values for bars
+  pc = barplot(d$y,
+               width = 1, space = 0.2, border = NA, axes = F,
+               ylim = c(0, 1.05 * max(d$y, na.rm = T)), 
+               ylab = "Counts" , cex.names = 0.7, 
+               names.arg = d$z,
+               main = "Pareto Chart (version 2)")
+  
+  ## anotate left axis
+  axis(side = 2, at = c(0, d$y), las = 1, col.axis = "grey62", col = "grey62", tick = T, cex.axis = 0.8)
+  
+  ## frame plot
+  box( col = "grey62")
+  
+  ## Cumulative Frequency Lines 
+  px <- d$cum_freq * max(d$y, na.rm = T)
+  lines(pc, px, type = "b", cex = 0.7, pch = 19, col="cyan4")
+  
+  ## Annotate Right Axis
+  axis(side = 4, at = c(0, px), labels = paste(c(0, round(d$cum_freq * 100)) ,"%",sep=""), 
+       las = 1, col.axis = "grey62", col = "cyan4", cex.axis = 0.8, col.axis = "cyan4")
+  
+  ## restoring default paramenter
+  par(def_par) 
+  
+}
+boxplot_grafico()
 ```
 
 The first graphic bellow ,volume and value normalized, helps us to undestand the moviment of market. In 2016, the volume market sharply drecrease more than the value market, even drecrease less than before as you can note the blue line slope. 
@@ -89,15 +136,17 @@ One of my issue after June 2016 is the price may impact the volume, the red line
 
 ```{r , echo=FALSE, message=FALSE}
 mercado_grafico1 <- function(){
-      MBI_mercado <- MBI[,c("Value","Volume","Date")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
-      aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)  %>%
+      MBI <- manipulacao()
+      MBI_mercado1 <- MBI[,c("Value","Volume","Date")]
+      #E PRECISO NORMALIZAR PARA QUE A GRANDEZA FICA NA MESMA ESCALA CASO AO CONTRARIO NAO DA PARA COMPARAR
+      MBI_mercado1[,c("Value","Volume")] <- scale(MBI_mercado1[,c("Value","Volume")])
+      MBI_mercado1 <- as.data.frame(MBI_mercado1)
+      aggregate(MBI_mercado1[,c("Value","Volume")],by = list(MBI_mercado1$Date), FUN = sum)  %>%
         ggplot() +
-        geom_smooth(aes(x=Group.1, y = Value, colour = "blue")) +
-        geom_smooth(aes(x=Group.1, y = Volume, colour = "green")) + 
+        geom_smooth(aes(x=Group.1, y = Value, colour = "blue"),show.legend = FALSE) +
+        geom_smooth(aes(x=Group.1, y = Volume, colour = "green"),show.legend = FALSE) + 
         scale_color_discrete(name = "Valores no tempo", labels = c("Valor", "Volume"))
-}
+    }
 mercado_grafico1()
 ```
 
@@ -105,6 +154,7 @@ For a confirm conclusion about the price, we can note in the 2 chart beloow the 
 
 ```{r, echo=FALSE, message=FALSE}
     mercado_grafico2 <- function(){
+      MBI <- manipulacao()
       MBI_mercado <- MBI[,c("Value","Volume","Date")]
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado <- as.data.frame(MBI_mercado)
@@ -115,6 +165,7 @@ For a confirm conclusion about the price, we can note in the 2 chart beloow the 
         geom_point(aes(x=Group.1, y = Volume, size = Price)) + ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
     }
     mercado_grafico3 <- function(){
+      MBI <- manipulacao()
       MBI_mercado <- MBI[,c("Value","Volume","Date")]
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado <- as.data.frame(MBI_mercado)
@@ -131,6 +182,7 @@ A quick undestand which Flavor has more impact in the market, easly notice in th
 
 ```{r, echo=FALSE, message=FALSE}
 mercado_grafico4 <- function(){
+      MBI <- manipulacao()
       MBI_mercado <- MBI[,c("Value","Volume","Date","Flavor")]
       MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date,MBI_mercado$Flavor), FUN = sum)
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
@@ -145,6 +197,7 @@ mercado_grafico4 <- function(){
       ggplotly(t)
     }
 mercado_grafico5 <- function(){
+      MBI <- manipulacao()
       MBI_mercado <- MBI[MBI$Flavor!="Milk Chocolate",c("Value","Volume","Date","Flavor")]
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado <- as.data.frame(MBI_mercado)
@@ -165,6 +218,7 @@ Now, you can check witouth be normalized. I had to use 3 different graph because
 
 ```{r , echo=FALSE, message=FALSE, warning=FALSE}
 mercado_grafico6 <- function(){
+      MBI <- manipulacao()
       MBI_tb <- MBI[,c("Value","Volume","Date","Flavor")]
       MBI_tb$Month <- month(MBI_tb$Date)
       MBI_tb <- aggregate(MBI_tb[,c("Value","Volume")], by = list(MBI_tb$Month, MBI_tb$Flavor), FUN = sum)
@@ -183,7 +237,7 @@ mercado_grafico6 <- function(){
               axis.ticks.y=element_blank(),
               strip.text = element_text(size=15))
       ggplotly(t)
-}
+    }
 mercado_grafico6()
 ```
 
@@ -191,6 +245,7 @@ Analysing the material market, as easy to realise the plastic predominant, the c
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 mercado_grafico7 <- function(){
+      MBI <- manipulacao()
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
@@ -205,7 +260,7 @@ mercado_grafico7 <- function(){
               axis.text.y=element_blank(),
               axis.ticks.y=element_blank(),
               strip.text = element_blank())+
-              guides(fill=FALSE)
+        guides(fill=FALSE)
       ggplotly(g)%>%
         layout(legend = list(
           orientation = "v", x = 1.1, y =0.5
@@ -213,6 +268,7 @@ mercado_grafico7 <- function(){
         )
     }
 mercado_grafico8 <- function(){
+      MBI <- manipulacao()
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
@@ -227,7 +283,7 @@ mercado_grafico8 <- function(){
               axis.text.y=element_blank(),
               axis.ticks.y=element_blank(),
               strip.text = element_text(size=10)) +
-              guides(fill=FALSE)
+        guides(fill=FALSE)
       ggplotly(g)  %>%
         layout(legend = list(
           orientation = "v", x = 1.1, y =0.5
@@ -242,6 +298,7 @@ The caloric content always have been dominated by sugar, the graphic bellow can 
 
 ```{r,echo=FALSE, message=FALSE, warning=FALSE}
 mercado_grafico9 <- function(){
+      MBI <- manipulacao()
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list('Caloric Content' = MBI$`Caloric Content`, Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
@@ -269,6 +326,7 @@ The market has two type of size package that lead the other.
 
 ```{r,echo=FALSE, message=FALSE, warning=FALSE}
 mercado_grafico10 <- function(){
+      MBI <- manipulacao()
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$AVG_PS, MBI$Year, MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
@@ -288,7 +346,7 @@ mercado_grafico10 <- function(){
           orientation = "v", x = 1.1, y =0.5
         )
         )
-}
+    }
 mercado_grafico10()
 ```
 
@@ -298,16 +356,16 @@ After understand the market, we can set the categories more influencer for run t
 
 ```{r,echo=FALSE, message=FALSE, warning=FALSE}
 mercado_month <- function(){
-      MBI$Month <- month(MBI$Date)
+      MBI <- manipulacao()
       aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Month), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
     }
-    mercado_year <- function(){
-      MBI$Year <- year(MBI$Date)
+mercado_year <- function(){
+      MBI <- manipulacao()
       aggregate(MBI[,c("Value","Volume")], by = list(Year =MBI$Year), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
     } 
-    grid.arrange(tableGrob(mercado_year(), rows = NULL),
+grid.arrange(tableGrob(mercado_year(), rows = NULL),
                tableGrob(mercado_month(), rows = NULL), nrow = 1)
 
 ```
@@ -320,8 +378,7 @@ Another way to understand the table is plotting in a line chart by year. The dre
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 mercado_grafico11 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI$Year <- year(MBI$Date)
+      MBI <- manipulacao()
       MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
@@ -342,8 +399,7 @@ mercado_grafico11 <- function(){
       t
     }
 mercado_grafico12 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI$Year <- year(MBI$Date)
+      MBI <- manipulacao()
       MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
@@ -364,8 +420,7 @@ mercado_grafico12 <- function(){
       t
     }
 mercado_grafico13 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI$Year <- year(MBI$Date)
+      MBI <- manipulacao()
       MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
         mutate(Price = round(Value / Volume,2))
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
@@ -394,8 +449,7 @@ There are 2 facts more that could have strong influence in the market, Coverage 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 mercado_grafico14 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI$Year <- year(MBI$Date)
+      MBI <- manipulacao()
       MBI_tb <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Coverage)
       t <- MBI_tb[MBI_tb$Atributos=="Coverage",]%>%
@@ -414,13 +468,13 @@ mercado_grafico14 <- function(){
       t
     }
 mercado_grafico15 <- function(){
+      MBI <- manipulacao()
       x <- density(MBI$Coverage, na.rm = TRUE)
       hist(MBI$Coverage, main = "Coverage Histogram")
       plot(x, main = "Coverage Kernel Distribution")
     }
 mercado_grafico16 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI$Year <- year(MBI$Date)
+      MBI <- manipulacao()
       MBI_tb <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Shelf_Availability)
       t <- MBI_tb[MBI_tb$Atributos=="Shelf_Availability",]%>%
@@ -439,11 +493,12 @@ mercado_grafico16 <- function(){
       t
     }
 mercado_grafico17 <- function(){
+      MBI <- manipulacao()
       x <- density(MBI$Shelf_Availability, na.rm = TRUE)
       par(mfrow=c(2,1))
-      y <- hist(MBI$Shelf_Availability, main = "Shelf Availability Histogram")
+      y <- hist(MBI$Coverage, main = "Shelf Availability Histogram")
       x1 <- plot(x, main = "Shelf Availability Kernel Distribution")
-}
+    }
 
 mercado_grafico14()
 mercado_grafico15()
@@ -458,8 +513,7 @@ For help us to identify the strong correlation in the variables, the two chart b
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
     mercado_grafico19 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI$Year <- year(MBI$Date)
+      MBI <- manipulacao()
       MBI_tb1 <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb2 <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb3 <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
@@ -472,8 +526,7 @@ For help us to identify the strong correlation in the variables, the two chart b
                p.mat = res2$P, sig.level = 0.05, insig = "blank")  
     }
     mercado_grafico20 <- function(){
-      MBI$Month <- month(MBI$Date)
-      MBI$Year <- year(MBI$Date)
+      MBI <- manipulacao()
       MBI_tb1 <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb2 <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb3 <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
@@ -486,3 +539,32 @@ For help us to identify the strong correlation in the variables, the two chart b
     mercado_grafico19()
     mercado_grafico20()
 ```
+
+##Forcast scene 
+
+Now, we are able to choose the best atributes for work with forecast with less data and the result will be able to describe the market as well. Follow the atributes:
+
+- Flavor: Milk Chocolate, Cherry and Coffe
+- Caloric Content: Sugar
+- Average Package Size: Big and very small
+
+We can not assume a cluster with these atributes together because was made analyse independet. So if the row has one of these tree atributes will be acptable to work. The cluster that has been create represent 97% of the whole volume and 96% of the whole value.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+manipulacao3 <- function(){
+  MBI$AVG_PS <- with(MBI, ifelse(`Avg. Pack.Size` <= 61 & `Avg. Pack.Size` >=48, "VERY SMALL",
+                                 ifelse(`Avg. Pack.Size`>61 & `Avg. Pack.Size`<=67,"SMALL",
+                                        ifelse(`Avg. Pack.Size`>67 & `Avg. Pack.Size`<=80,"BIG",
+                                               ifelse(`Avg. Pack.Size`> 80 & `Avg. Pack.Size`<=84,"VERY BIG","OUTLIER")))))
+  MBI2 <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") | MBI$`Caloric Content`=="Sugar" | MBI$AVG_PS==c("BIG","VERY SMALL"),]
+  round(apply(MBI2[,c("Volume","Value")],2,sum)/apply(MBI[,c("Volume","Value")],2,sum),2)
+  print(object.size(MBI), units = "auto", standard = "SI")
+  print(object.size(MBI2), units = "auto", standard = "SI")
+}
+```
+
+
+##Forward Studies
+
+- Develop forecast model with external insight then predict how the market will react.
+- Rewrite on Python for be more flexible to access the tensorflow library then use Deep Learning Models.
