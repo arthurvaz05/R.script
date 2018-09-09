@@ -550,21 +550,202 @@ Now, we are able to choose the best atributes for work with forecast with less d
 
 We can not assume a cluster with these atributes together because was made analyse independet. So if the row has one of these tree atributes will be acptable to work. The cluster that has been create represent 97% of the whole volume and 96% of the whole value.
 
+The last month result in 2017, the brand Lili drop by 64,8% share volume and Gen up by 25,4% share volume, if you analyse the Price Index will be possible to realise the price has a strong influence because the brand Lili rose the price by 40% over the market price and the Glen brand dramatically dropped by 23% of market price.
+
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-manipulacao3 <- function(){
-  MBI$AVG_PS <- with(MBI, ifelse(`Avg. Pack.Size` <= 61 & `Avg. Pack.Size` >=48, "VERY SMALL",
-                                 ifelse(`Avg. Pack.Size`>61 & `Avg. Pack.Size`<=67,"SMALL",
-                                        ifelse(`Avg. Pack.Size`>67 & `Avg. Pack.Size`<=80,"BIG",
-                                               ifelse(`Avg. Pack.Size`> 80 & `Avg. Pack.Size`<=84,"VERY BIG","OUTLIER")))))
-  MBI2 <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") | MBI$`Caloric Content`=="Sugar" | MBI$AVG_PS==c("BIG","VERY SMALL"),]
-  round(apply(MBI2[,c("Volume","Value")],2,sum)/apply(MBI[,c("Volume","Value")],2,sum),2)
-  print(object.size(MBI), units = "auto", standard = "SI")
-  print(object.size(MBI2), units = "auto", standard = "SI")
-}
+      mercado_grafico21 <- function(){
+        MBI <- manipulacao()
+        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI1 <- pareto(MBI,MBI$Value)
+        MBI1 <- MBI1[MBI1$cum_freq <= 0.2,]
+        MBI1 <- aggregate(MBI1[,c("Volume","Value")], by = list(Month = MBI1$Month, Year = MBI1$Year, Brand = MBI1$Brand), FUN = sum)
+        t <- MBI1%>%
+          ggplot(aes(x = Month, y= Volume, fill = Brand, size = Value)) + 
+          geom_point() + 
+          facet_grid(Year ~ .) +
+          theme(axis.title.x=element_blank(),
+                axis.text.x=element_blank(),
+                axis.ticks.x=element_blank(),
+                axis.title.y=element_blank(),
+                axis.text.y=element_blank(),
+                axis.ticks.y=element_blank(),
+                strip.text = element_text(size=10)) +
+          guides(fill=FALSE)
+        ggplotly(t)
+      }
+      mercado_grafico22 <- function(){
+        MBI <- manipulacao()
+        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI1 <- pareto(MBI,MBI$Value)
+        #MBI2 <- pareto(MBI,MBI$Volume)
+        MBI1$Brand <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Brand)
+        MBI1_1 <-  aggregate(MBI1[MBI1$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Brand=="OTHERS",]$Month, Year = MBI1[MBI1$Brand=="OTHERS",]$Year, Brand = MBI1[MBI1$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Brand = MBI1[MBI1$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI1 <- rbind(MBI1,MBI1_1)
+        MBI1$Price <- round(MBI1$Price,2)
+        
+        price_market <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
+        price_market$Price <- round(price_market$Value/price_market$Volume,2)
+        price_market$Brand <- "Market"
+        MBI1 <- rbind(MBI1,price_market)
+        
+        MBI1$Price_index <- round(as.numeric(MBI1$Price)/price_market[match(paste(MBI1$Month,MBI1$Year,"Market", sep = " - "),paste(price_market$Month,price_market$Year,"Market", sep = " - ")),"Price"],3)
+        
+        t <- MBI1%>%
+          ggplot(aes(x = Month, y= Price_index, colour = Brand)) + 
+          geom_line() + 
+          facet_grid(Year ~ .) +
+          theme(axis.title.x=element_blank(),
+                axis.text.x=element_blank(),
+                axis.ticks.x=element_blank(),
+                axis.title.y=element_blank(),
+                axis.text.y=element_blank(),
+                axis.ticks.y=element_blank(),
+                strip.text = element_text(size=10)) +
+          guides(fill=FALSE) + 
+          geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
+        ggplotly(t)
+      }
+      mercado_grafico23 <- function(){
+        MBI <- manipulacao()
+        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        #MBI1 <- pareto(MBI,MBI$Value)
+        MBI2 <- pareto(MBI,MBI$Volume)
+        MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
+        MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Brand=="OTHERS",]$Month, Year = MBI2[MBI2$Brand=="OTHERS",]$Year, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI2 <- rbind(MBI2,MBI2_1)
+        MBI2$Price <- round(MBI2$Price,2)
+        
+        total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
+        total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
+        total_mercado_volume$Brand <- "Market"
+        MBI2 <- rbind(MBI2,total_mercado_volume)
+        
+        MBI2$Share_volume <- round(as.numeric(MBI2$Volume)/total_mercado_volume[match(paste(MBI2$Month,MBI2$Year,"Market", sep = " - "),paste(total_mercado_volume$Month,total_mercado_volume$Year,"Market", sep = " - ")),"Volume"],3)
+        
+        t <- MBI2%>%
+          ggplot(aes(x = Month, y= Share_volume, colour = Brand)) + 
+          geom_line() + 
+          facet_grid(Year ~ .) +
+          theme(axis.title.x=element_blank(),
+                axis.text.x=element_blank(),
+                axis.ticks.x=element_blank(),
+                axis.title.y=element_blank(),
+                axis.text.y=element_blank(),
+                axis.ticks.y=element_blank(),
+                strip.text = element_text(size=10)) +
+          guides(fill=FALSE) 
+        #+ geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
+        ggplotly(t)
+      }
+      mercado_grafico24 <- function(){
+        MBI <- manipulacao()
+        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        #MBI1 <- pareto(MBI,MBI$Value)
+        MBI2 <- pareto(MBI,MBI$Volume)
+        MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
+        MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Brand=="OTHERS",]$Month, Year = MBI2[MBI2$Brand=="OTHERS",]$Year, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI2 <- rbind(MBI2,MBI2_1)
+        MBI2$Price <- round(MBI2$Price,2)
+        
+        total_mercado_valor <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
+        total_mercado_valor$Price <- round(total_mercado_valor$Value/total_mercado_valor$Volume,2)
+        total_mercado_valor$Brand <- "Market"
+        MBI2 <- rbind(MBI2,total_mercado_valor)
+        
+        MBI2$Share_value <- round(as.numeric(MBI2$Value)/total_mercado_valor[match(paste(MBI2$Month,MBI2$Year,"Market", sep = " - "),paste(total_mercado_valor$Month,total_mercado_valor$Year,"Market", sep = " - ")),"Value"],3)
+        
+        t <- MBI2%>%
+          ggplot(aes(x = Month, y= Share_value, colour = Brand)) + 
+          geom_line() + 
+          facet_grid(Year ~ .) +
+          theme(axis.title.x=element_blank(),
+                axis.text.x=element_blank(),
+                axis.ticks.x=element_blank(),
+                axis.title.y=element_blank(),
+                axis.text.y=element_blank(),
+                axis.ticks.y=element_blank(),
+                strip.text = element_text(size=10)) +
+          guides(fill=FALSE) 
+        #+ geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
+        ggplotly(t)
+      }
+      mercado_grafico21()
+      mercado_grafico22()
+      mercado_grafico23()
+      mercado_grafico24()
 ```
 
+The Lily was chosen to apply a forecast, even the last share volume had a suddenly drop this won't reflect a long term.
+The forecast model that I used was ![Prophet] (https://research.fb.com/prophet-forecasting-at-scale/) developed by Facebbok. As you can see I train a dataset which have resulted a low error.
 
+```{r pressure, echo=FALSE, message=FALSE, warning=FALSE}
+    forecast1 <- function(){
+      MBI <- manipulacao()
+      MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+      MBI2 <- pareto(MBI,MBI$Volume)
+      MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
+      MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+        mutate(Price = Value/Volume)
+      MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Date = MBI2[MBI2$cum_freq <= 0.2,]$Date, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+        mutate(Price = Value/Volume)
+      MBI2 <- rbind(MBI2,MBI2_1)
+      MBI2$Price <- round(MBI2$Price,2)
+      MBI_MERCADO <- MBI2
+      
+      M <- MBI_MERCADO[,c("Date","Volume")]
+      ## 75% DO TAMANHO DA AMOSTRA
+      tamanho_amostra <- floor(0.75 * nrow(M))
+      
+      train <- M[1:tamanho_amostra, ]
+      test <- M[tamanho_amostra:NROW(M), ]
+      colnames(train) <- c('ds', 'y')
+      train <- na.omit(train)
+      M1 <- prophet::prophet(train)
+      return(M1)
+    }
+    forecast_grafico1 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)
+      x <- plot(M1, forecast)
+      ggplotly(x)  
+    }
+    forecast_grafico1()
+```
+
+```{r pressure, echo=FALSE, message=FALSE, warning=FALSE}
+forecast_erro1 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)  
+      forc <- forecast[,c("ds","yhat")]
+      colnames(forc) <- c("Date","Volume")
+      test <- dplyr::left_join(test,forc, by = "Date")
+      
+    d <-   list(
+      "rmsle" = round(rmsle(test$Volume.x,test$Volume.y),2),
+      "mape" = round(mape(test$Volume.x,test$Volume.y),2),
+      "mae" = mae(test$Volume.x,test$Volume.y),
+      "rmse" = rmse(test$Volume.x,test$Volume.y)
+      )
+    d <- as.data.frame(d)
+    grid.table(d,rows=NULL)
+    } 
+    forecast_grafico1()
+```
 ##Forward Studies
 
-- Develop forecast model with external insight then predict how the market will react.
+- Develop a model with external insight then predict how the market will react.
 - Rewrite on Python for be more flexible to access the tensorflow library then use Deep Learning Models.

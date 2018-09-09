@@ -1340,60 +1340,94 @@ manipulacao3 <- function(){
 
 #MODELO PREDITIVO MARCA
 {
-  #MILK CHOCOLATE
-  mercado_grafico44 <- function(){
-    MBI <- manipulacao()
-    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
-    MBI2 <- pareto(MBI,MBI$Volume)
-    MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
-    MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
-      mutate(Price = Value/Volume)
-    MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Date = MBI2[MBI2$cum_freq <= 0.2,]$Date, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
-      mutate(Price = Value/Volume)
-    MBI2 <- rbind(MBI2,MBI2_1)
-    MBI2$Price <- round(MBI2$Price,2)
-    MBI_MERCADO <- MBI2
-    
-    M <- MBI_MERCADO[,c("Date","Volume")]
-    ## 75% DO TAMANHO DA AMOSTRA
-    tamanho_amostra <- floor(0.75 * nrow(M))
-    
-    train <- M[1:tamanho_amostra, ]
-    test <- M[tamanho_amostra:NROW(M), ]
-    colnames(train) <- c('ds', 'y')
-    train <- na.omit(train)
-    M1 <- prophet::prophet(train)
-    
-    future <- make_future_dataframe(M1, periods = 365)
-    forecast <- predict(M1, future)
-    x <- plot(M1, forecast)
-    ggplotly(x)
-    
-    tail(forecast[c('ds', 'yhat', 'yhat_lower', 'yhat_upper')])
-    tail(forecast)
-    
-    
-    prophet_plot_components(M1, forecast)
-    
-    forecast %>%
-      mutate(resid = trend - yhat)%>%
-      ggplot(aes(x = ds, y = resid)) +
-      geom_hline(yintercept = 0, color = "red") +
-      geom_point(alpha = 0.5) +
-      geom_smooth()
-    
-    forecast %>%
-      gather(x, y, trend, yhat) %>%
-      ggplot(aes(x = ds, y = y, color = x)) +
-      geom_point(alpha = 0.5) +
-      geom_line(alpha = 0.5)
-    
-    forc <- forecast[,c("ds","yhat")]
-    colnames(forc) <- c("Date","Volume")
-    test <- dplyr::left_join(test,forc, by = "Date")
-    
-    rmsle(test$Volume.x,test$Volume.y)
-    mape(test$Volume.x,test$Volume.y)
+  #MILK CHOCOLATE - LILI BRAND
+  {
+    forecast1 <- function(){
+      MBI <- manipulacao()
+      MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+      MBI2 <- pareto(MBI,MBI$Volume)
+      MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
+      MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+        mutate(Price = Value/Volume)
+      MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Date = MBI2[MBI2$cum_freq <= 0.2,]$Date, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+        mutate(Price = Value/Volume)
+      MBI2 <- rbind(MBI2,MBI2_1)
+      MBI2$Price <- round(MBI2$Price,2)
+      MBI_MERCADO <- MBI2
+      
+      M <- MBI_MERCADO[,c("Date","Volume")]
+      ## 75% DO TAMANHO DA AMOSTRA
+      tamanho_amostra <- floor(0.75 * nrow(M))
+      
+      train <- M[1:tamanho_amostra, ]
+      test <- M[tamanho_amostra:NROW(M), ]
+      colnames(train) <- c('ds', 'y')
+      train <- na.omit(train)
+      M1 <- prophet::prophet(train)
+      return(M1)
+    }
+    forecast_grafico1 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)
+      x <- plot(M1, forecast)
+      ggplotly(x)  
+    }
+    forecast_grafico2 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)
+      #tail(forecast[c('ds', 'yhat', 'yhat_lower', 'yhat_upper')])
+      #tail(forecast)
+      
+    }
+    forecast_grafico3 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)
+      prophet_plot_components(M1, forecast)
+    }
+    forecast_grafico4 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)
+      y <- forecast %>%
+        mutate(resid = trend - yhat)%>%
+        ggplot(aes(x = ds, y = resid)) +
+        geom_hline(yintercept = 0, color = "red") +
+        geom_point(alpha = 0.5) +
+        geom_smooth()
+      ggplotly(y)
+    }
+    forecast_grafico5 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)
+      z <- forecast %>%
+        gather(x, y, trend, yhat) %>%
+        ggplot(aes(x = ds, y = y, color = x)) +
+        geom_point(alpha = 0.5) +
+        geom_line(alpha = 0.5)
+      ggplotly(z)
+    }
+    forecast_erro1 <- function(){
+      M1 <- forecast1()
+      future <- make_future_dataframe(M1, periods = 365)
+      forecast <- predict(M1, future)  
+      forc <- forecast[,c("ds","yhat")]
+      colnames(forc) <- c("Date","Volume")
+      test <- dplyr::left_join(test,forc, by = "Date")
+      
+    d <-   list(
+      "rmsle" = round(rmsle(test$Volume.x,test$Volume.y),2),
+      "mape" = round(mape(test$Volume.x,test$Volume.y),2),
+      "mae" = mae(test$Volume.x,test$Volume.y),
+      "rmse" = rmse(test$Volume.x,test$Volume.y)
+      )
+    d <- as.data.frame(d)
+    grid.table(d,rows=NULL)
+    } 
+    forecast_grafico1()
   }
   #CHERRY
   mercado_grafico45 <- function(){
