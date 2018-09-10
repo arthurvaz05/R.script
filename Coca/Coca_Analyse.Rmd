@@ -540,7 +540,6 @@ For help us to identify the strong correlation in the variables, the two chart b
     mercado_grafico20()
 ```
 
-##Forcast scene 
 
 Now, we are able to choose the best atributes for work with forecast with less data and the result will be able to describe the market as well. Follow the atributes:
 
@@ -551,6 +550,8 @@ Now, we are able to choose the best atributes for work with forecast with less d
 We can not assume a cluster with these atributes together because was made analyse independet. So if the row has one of these tree atributes will be acptable to work. The cluster that has been create represent 97% of the whole volume and 96% of the whole value.
 
 The forecast model that I used was [Prophet](https://research.fb.com/prophet-forecasting-at-scale/) developed by Facebbok. I will train the data with Prophet model and analyse the error if is acceptable to move on.
+
+#Brand market
 
 ###Chocolate Milk
 
@@ -1033,7 +1034,86 @@ d <- forecast_erro1()
 grid.table(d,rows=NULL)
 ```
 
+
+#Producer market
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+mercado_grafico33 <- function(){
+        MBI <- manipulacao()
+        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI1 <- pareto(MBI,MBI$Value)
+        #MBI2 <- pareto(MBI,MBI$Volume)
+        MBI1$Producer <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Producer)
+        MBI1_1 <-  aggregate(MBI1[MBI1$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Producer=="OTHERS",]$Month, Year = MBI1[MBI1$Producer=="OTHERS",]$Year, Producer = MBI1[MBI1$Producer=="OTHERS",]$Producer), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Producer = MBI1[MBI1$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI1 <- rbind(MBI1,MBI1_1)
+        MBI1$Price <- round(MBI1$Price,2)
+        
+        
+        t <- MBI1%>%
+          ggplot(aes(x = Month, y= Volume, fill = Producer, size = Price)) + 
+          geom_point() + 
+          facet_grid(Year ~ .) +
+          theme(axis.title.x=element_blank(),
+                axis.text.x=element_blank(),
+                axis.ticks.x=element_blank(),
+                axis.title.y=element_blank(),
+                axis.text.y=element_blank(),
+                axis.ticks.y=element_blank(),
+                strip.text = element_text(size=10)) +
+          guides(fill=FALSE)
+        ggplotly(t)
+}
+mercado_grafico35 <- function(){
+        MBI <- manipulacao()
+        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
+        #MBI1 <- pareto(MBI,MBI$Value)
+        MBI2 <- pareto(MBI,MBI$Volume)
+        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
+        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
+          mutate(Price = Value/Volume)
+        MBI2 <- rbind(MBI2,MBI2_1)
+        MBI2$Price <- round(MBI2$Price,2)
+        
+        total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
+        total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
+        total_mercado_volume$Producer <- "Market"
+        MBI2 <- rbind(MBI2,total_mercado_volume)
+        
+        MBI2$Share_volume <- round(as.numeric(MBI2$Volume)/total_mercado_volume[match(paste(MBI2$Month,MBI2$Year,"Market", sep = " - "),paste(total_mercado_volume$Month,total_mercado_volume$Year,"Market", sep = " - ")),"Volume"],3)
+        
+        t <- MBI2%>%
+          ggplot(aes(x = Month, y= Share_volume, colour = Producer)) + 
+          geom_line() + 
+          facet_grid(Year ~ .) +
+          theme(axis.title.x=element_blank(),
+                axis.text.x=element_blank(),
+                axis.ticks.x=element_blank(),
+                axis.title.y=element_blank(),
+                axis.text.y=element_blank(),
+                axis.ticks.y=element_blank(),
+                strip.text = element_text(size=10)) +
+          guides(fill=FALSE) 
+        #+ geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
+        ggplotly(t)
+      }
+
+mercado_grafico33()
+mercado_grafico35()
+
+```
+
+
+
 ##Forward Studies
 
 - Develop a model with external insight then predict how the market will react.
 - Rewrite on Python for be more flexible to access the tensorflow library then use Deep Learning Models.
+- Amplify the forecast model to others brand and producers.
+- Readjust the chart format to the markdown report.
