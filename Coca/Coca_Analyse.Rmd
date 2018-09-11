@@ -6,59 +6,55 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-  #install.packages("rmarkdown")
   library(rmarkdown)
   library(readr)
   library(tidyverse)  
   library(lubridate)
   library(plotly)
   library(readxl)
-  #install.packages("prophet")
   library(prophet)
-  #install.packages('Metrics')
   library('Metrics')
   require(gridExtra)
-  #install.packages("devtools")
   library(devtools)
- #devtools::install_github('hadley/ggplot2', force = TRUE)
-  #install.packages("corrplot")
   library(corrplot)
   library("Hmisc")
-  #install.packages("PerformanceAnalytics")
   library("PerformanceAnalytics")
+  library(shiny)
 ```
 
 <center>
 ![](https://upload.wikimedia.org/wikipedia/commons/d/d4/Coca-Cola_Brasil_logo.png)
 </center>
 
-##The Situation:
+#The Situation:
+
 - You work for a consultant company on the date of December 2017 and a beverages company hired your Analytical service.
 
-##They wanted you to provide:
+#They wanted you to provide:
+
 - A descriptive diagnosis of how this industry is performing through different lenses (**Producers**, **Brands**, **Packages**, **Pricing**)
 - A 6-month forecast of volume sales for Brazil to both industry and Producers (From Jan/18 to Jun/18).
 
 ## Market analyse
 
-First and foremost, I will make a quickly analyse of brazilian market. This analyse will help me to choose which direction will be better to follow, as I have a short time to try as many way possible. 
-In the firs moment we just have done a data mining to preprer the data for forecast analyse.   
-Remark about how I create group of Avarage Pack Size, I used a boxplot to set the size of each group.
+First and foremost, I will make a quickly analyse of brazilian market that is going to  help to choose a sample data which will be better to describe the whole market. Besides, gain of computer performance to test and valuation models.
+In the firs moment we just have done a data mining to preprer the data for forecast analyse, and standarize few variables.   
+Remark about how I create group of Avarage Pack Size, I used a boxplot to set the size of each group:
 
 - Less than First Quartil and greater than minimum Avarage Pack Size  = VERY SMALL
 - Greater than First Quartil and less than Median = SMALL
 - Greater than Median and less than Second Quartil = BIG
 - Greater than Second Quartil and less than maximium Avarage Pack Size = VERY BIG
 
-```{r pressure, echo=FALSE}
+```{r pressure, echo=FALSE,fig.align='center',out.extra='angle=90'}
 #CRIACAO DE VALORES, MUDANCA DE CLASSES SERAM FEITAS DENTRO DESSA FUNCAO
 manipulacao <- function(){
   #CARREGAR TABELA EXCEL
   MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
-                    col_types = c("date", "text", "text", 
-                                  "text", "text", "numeric", "text", 
-                                  "numeric", "numeric", "numeric", 
-                                  "numeric"))
+                      col_types = c("date", "text", "text", 
+                                    "text", "text", "numeric", "text", 
+                                    "numeric", "numeric", "numeric", 
+                                    "numeric"))
   #ADICIONAR A VARIAVEL MES
   MBI$Month <- month(MBI$Date)
   #ADICIONAR A VARIAVEL ANO
@@ -131,92 +127,65 @@ pareto_grafico <- function(x,y,z){
 boxplot_grafico()
 ```
 
-The first graphic bellow ,volume and value normalized, helps us to undestand the moviment of market. In 2016, the volume market sharply drecrease more than the value market, even drecrease less than before as you can note the blue line slope. 
-One of my issue after June 2016 is the price may impact the volume, the red line is almost flat.
+The first graphic bellow ,volume and value normalized, helps us to undestand the trully moviment of market. In 2016, the volume market sharply drecrease more than the value market in the first semester creating a intersection point, after that, volume drecrease less than before June 2016 as you can note the blue line slope. 
+One of my doubt  is after June 2016, problably the price should have impacted the volume, as red line is almost flat. Also we can conclude that has been constant the price increase.
 
-```{r , echo=FALSE, message=FALSE}
+```{r chunk1, echo=FALSE, message=FALSE,fig.align='center',out.extra='angle=90'}
 mercado_grafico1 <- function(){
       MBI <- manipulacao()
       MBI_mercado1 <- MBI[,c("Value","Volume","Date")]
       #E PRECISO NORMALIZAR PARA QUE A GRANDEZA FICA NA MESMA ESCALA CASO AO CONTRARIO NAO DA PARA COMPARAR
       MBI_mercado1[,c("Value","Volume")] <- scale(MBI_mercado1[,c("Value","Volume")])
       MBI_mercado1 <- as.data.frame(MBI_mercado1)
-      aggregate(MBI_mercado1[,c("Value","Volume")],by = list(MBI_mercado1$Date), FUN = sum)  %>%
-        ggplot() +
+      MBI_mercado1 <- aggregate(MBI_mercado1[,c("Value","Volume")],by = list(MBI_mercado1$Date), FUN = sum)
+      
+      x <- MBI_mercado1%>%
+       ggplot() +
         geom_smooth(aes(x=Group.1, y = Value, colour = "blue"),show.legend = FALSE) +
         geom_smooth(aes(x=Group.1, y = Volume, colour = "green"),show.legend = FALSE) + 
         scale_color_discrete(name = "Valores no tempo", labels = c("Valor", "Volume"))
+      
+      x1 <- ggplotly(x)
+      x2 <- div( x1, align="center" )
+      return(x2)
     }
 mercado_grafico1()
 ```
 
-For a confirm conclusion about the price, we can note in the 2 chart beloow the size of point which mean the price, did not change pasting time.
+A quick undestand which Flavor has more impact in the market, easly notice in the graphic bellow the Flavor Milk Chocolate has a huge impact in the market result. So could be interst to analyzes separete, for do that, was select three Flavors by  performance.
 
-```{r, echo=FALSE, message=FALSE}
-    mercado_grafico2 <- function(){
-      MBI <- manipulacao()
-      MBI_mercado <- MBI[,c("Value","Volume","Date")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
-      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)
-      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
-      MBI_mercado %>%
-        ggplot() +
-        geom_point(aes(x=Group.1, y = Volume, size = Price)) + ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
-    }
-    mercado_grafico3 <- function(){
-      MBI <- manipulacao()
-      MBI_mercado <- MBI[,c("Value","Volume","Date")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
-      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date), FUN = sum)
-      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
-      MBI_mercado %>%
-        ggplot() +
-        geom_point(aes(x=Group.1, y = Value, size = Price)) + ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
-    }
-    grid.arrange(mercado_grafico2(), mercado_grafico3(), ncol=2)
-```
-
-A quick undestand which Flavor has more impact in the market, easly notice in the graphic bellow the Flavor Milk Chocolate has a huge impact in the market result. So could be interst do different analyses, a cluster of Milk Chocolate and a cluster of another Flavors. Spliting in two cluster and zoom the second one, we can see cherry flavor follow by coffe flavor are most predominant. 
-
-```{r, echo=FALSE, message=FALSE}
+```{r chunk2, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE, results="hide"}
 mercado_grafico4 <- function(){
       MBI <- manipulacao()
       MBI_mercado <- MBI[,c("Value","Volume","Date","Flavor")]
-      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date,MBI_mercado$Flavor), FUN = sum)
+      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(Date = MBI_mercado$Date, Flavor = MBI_mercado$Flavor), FUN = sum)
       MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
       MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
       MBI_mercado <- as.data.frame(MBI_mercado)
-      MBI_mercado$Cluster <- ifelse(MBI_mercado$Group.2=="Milk Chocolate",1,2)
+      MBI_mercado$Cluster <- ifelse(MBI_mercado$Flavor=="Milk Chocolate",1,2)
       
-      t <- MBI_mercado %>%
-        ggplot() +
-        geom_point(aes(x=Volume, y = Value, size = Price, fill = Group.2), shape = 21) + 
-        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume))
-      ggplotly(t)
+         h <- MBI_mercado %>%
+          plot_ly()%>%
+                  add_markers(x= ~Volume, y = ~Value,type = 'scatter',size = ~Price, 
+                                color = ~Flavor )%>%
+            layout(title = 'Styled Scatter',
+                   yaxis = list(zeroline = FALSE),
+                   xaxis = list(zeroline = FALSE))
+         h <- div(h, align = "center")
+         
+         return(suppressWarnings(print(h)))
+      
     }
-mercado_grafico5 <- function(){
-      MBI <- manipulacao()
-      MBI_mercado <- MBI[MBI$Flavor!="Milk Chocolate",c("Value","Volume","Date","Flavor")]
-      MBI_mercado[,c("Value","Volume")] <- scale(MBI_mercado[,c("Value","Volume")])
-      MBI_mercado <- as.data.frame(MBI_mercado)
-      MBI_mercado <- aggregate(MBI_mercado[,c("Value","Volume")],by = list(MBI_mercado$Date,MBI_mercado$Flavor), FUN = sum)
-      MBI_mercado$Price <- MBI_mercado$Value/MBI_mercado$Volume
-      t <- MBI_mercado %>%
-        ggplot() +
-        geom_point(aes(x=Volume, y = Value, size = Price, fill = Group.2), shape = 21) + 
-        ylim(min(MBI_mercado$Volume),max(MBI_mercado$Volume)) +
-        scale_size(range = c(1, 10))
-      ggplotly(t)
-    }
-mercado_grafico4()
-mercado_grafico5()
+x <- mercado_grafico4()
+```
+
+```{r chunk3, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
 ```
 
 Now, you can check witouth be normalized. I had to use 3 different graph because the range of values is large, so if try to plot in a single chart, woulb clear the information.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk4, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 mercado_grafico6 <- function(){
       MBI <- manipulacao()
       MBI_tb <- MBI[,c("Value","Volume","Date","Flavor")]
@@ -225,136 +194,188 @@ mercado_grafico6 <- function(){
       MBI_tb$Price <- MBI_tb$Value/MBI_tb$Volume
       colnames(MBI_tb) <- c("Month","Flavor","Value","Volume","Price")
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
-      t <- MBI_tb%>%
-        ggplot(aes(y= Valores, x =Flavor, fill = Flavor)) + 
-        geom_bar(stat = "identity") + 
-        facet_wrap(Atributos ~ ., scales = "free") +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_blank(),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.text.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              strip.text = element_text(size=15))
-      ggplotly(t)
+      
+      ax <- list(
+        title = "",
+        zeroline = FALSE,
+        showline = FALSE,
+        showticklabels = FALSE,
+        showgrid = FALSE
+      )
+      
+      h <- MBI_tb[MBI_tb$Atributos=="Price",] %>%
+        plot_ly(type = "bar")%>%
+        add_trace(x= ~Flavor, y = ~Valores,  
+                    color = ~Flavor,width = 0.9 )%>%
+        layout(title = '',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      h1 <- MBI_tb[MBI_tb$Atributos=="Value",] %>%
+        plot_ly(type = "bar")%>%
+        add_trace(x= ~Flavor, y = ~Valores,  
+                  color = ~Flavor,width = 0.9 )%>%
+        layout(title = '',
+               yaxis = list(zeroline = FALSE),
+               bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      h2 <- MBI_tb[MBI_tb$Atributos=="Volume",] %>%
+        plot_ly(type = "bar")%>%
+        add_trace(x= ~Flavor, y = ~Valores,  
+                  color = ~Flavor,width = 0.9 )%>%
+        layout(title = '',
+               yaxis = list(zeroline = FALSE),
+               bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      p  <- plotly::subplot(h,h1,h2,shareX=F,shareY=F,titleX=F,titleY=F) %>% layout(showlegend=T,annotations = list(
+ list(x = 0.15 , y = 1.05, text = "Value", showarrow = F, xref='paper', yref='paper'),
+  list(x = 0.9 , y = 1.05, text = "Volume", showarrow = F, xref='paper', yref='paper'),
+ list(x = 0.5 , y = 1.05, text = "Price", showarrow = F, xref='paper', yref='paper')))
+
+      
+      p1 <- div(p, align = "center")
+         
+         return(suppressWarnings(print(p1)))
+      
+      
     }
-mercado_grafico6()
+x <- mercado_grafico6()
+```
+
+```{r chunk5, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
 ```
 
 Analysing the material market, as easy to realise the plastic predominant, the clomun chart on the left is the value market and on the right volume market by material package. In the end of 2017 seems exist a inverse correlation or just a casuality because the campaing agains plastics are inrease nowadays.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk6, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 mercado_grafico7 <- function(){
       MBI <- manipulacao()
       MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
-      g <- ggplot(MBI_grafico, aes(x=Month, y=Value,colour=Material)) + 
-        geom_line(stat='identity') + 
-        ggtitle("Value") +
-        facet_grid(Year ~ .)  +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_blank(),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.text.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              strip.text = element_blank())+
-        guides(fill=FALSE)
-      ggplotly(g)%>%
-        layout(legend = list(
-          orientation = "v", x = 1.1, y =0.5
-        )
-        )
-    }
-mercado_grafico8 <- function(){
-      MBI <- manipulacao()
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(Material = MBI$`Pack Material`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
-      MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
-      g <- ggplot(MBI_grafico, aes(x=Month, y=Volume,colour=Material)) + 
-        geom_line(stat='identity') + 
-        ggtitle("Volume") +
-        facet_grid(Year ~ .) +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_blank(),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.text.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              strip.text = element_text(size=10)) +
-        guides(fill=FALSE)
-      ggplotly(g)  %>%
-        layout(legend = list(
-          orientation = "v", x = 1.1, y =0.5
-        )
-        )
+      h <- MBI_grafico%>%
+        plot_ly(type = "scatter", mode = 'lines')%>%
+        add_trace(x= ~Month, y = ~Value,  
+                  color = ~Material,width = 0.9 )%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      h1 <- MBI_grafico%>%
+        plot_ly(type = "scatter", mode = 'lines')%>%
+        add_trace(x= ~Month, y = ~Volume,  
+                  color = ~Material,width = 0.9 )%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      
+      p  <- plotly::subplot(h,h1, nrows = 2,shareX=F,shareY=F,titleX=T,titleY=T) %>% layout(showlegend=T)
+      
+      
+      p1 <- div(p, align = "center")
+      
+      return(suppressWarnings(print(p1)))
+      
+    
     }
-mercado_grafico7()
-mercado_grafico8()
+
+x <- mercado_grafico7()
 ```
+
+```{r chunk7, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
+```
+
 
 The caloric content always have been dominated by sugar, the graphic bellow can prove this sentence.
 
-```{r,echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk8,echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 mercado_grafico9 <- function(){
       MBI <- manipulacao()
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list('Caloric Content' = MBI$`Caloric Content`, Year = MBI$Year, Month = MBI$Month), FUN = sum)
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list('Caloric Content' = MBI$`Caloric Content`,  Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
-      g <- ggplot(MBI_grafico, aes(x=Month, y=Value,colour=`Caloric Content`)) + 
-        geom_line(stat='identity') + 
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_blank(),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.text.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              strip.text = element_text(size=10),
-              legend.title = element_blank()) +
-        facet_grid(Year ~ .) 
-      ggplotly(g)%>%
-        layout(legend = list(
-          orientation = "v", x = 1.1, y =0.5
-        )
-        )
+      
+      h <- MBI_grafico%>%
+        plot_ly(type = "scatter", mode = 'lines')%>%
+        add_trace(x= ~Month, y = ~Value,  
+                  color = ~`Caloric Content`)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      h1 <- MBI_grafico%>%
+        plot_ly(type = "scatter", mode = 'lines')%>%
+        add_trace(x= ~Month, y = ~Volume,  
+                  color = ~`Caloric Content`)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      
+      p  <- plotly::subplot(h,h1, nrows = 2,shareX=F,shareY=F,titleX=T,titleY=T) %>% layout(showlegend=T)
+      
+      
+      p1 <- div(p, align = "center")
+      
+      return(suppressWarnings(print(p1)))
+      
+      
     }
-mercado_grafico9()
+x <- mercado_grafico9()
+```
+
+```{r chunk9, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
 ```
 
 The market has two type of size package that lead the other.
 
-```{r,echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk10,echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 mercado_grafico10 <- function(){
       MBI <- manipulacao()
-      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(MBI$AVG_PS, MBI$Year, MBI$Month), FUN = sum)
+      MBI_grafico <- aggregate(MBI[,c("Value","Volume")], by = list(AVG_PS = MBI$AVG_PS, Year = MBI$Year, Month = MBI$Month), FUN = sum)
       MBI_grafico$Price <- MBI_grafico$Value/MBI_grafico$Volume  
       
-      g <- ggplot(MBI_grafico, aes(x=Group.3, y=Value,colour=Group.1)) + 
-        geom_line(stat='identity') + 
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_blank(),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.text.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              strip.text = element_text(size=10),
-              legend.title = element_blank()) +
-        facet_grid(Group.2 ~ .)
-      ggplotly(g)%>%
-        layout(legend = list(
-          orientation = "v", x = 1.1, y =0.5
-        )
-        )
+      h <- MBI_grafico%>%
+        plot_ly(type = "scatter", mode = 'lines')%>%
+        add_trace(x= ~Month, y = ~Value,  
+                  color = ~AVG_PS)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      h1 <- MBI_grafico%>%
+        plot_ly(type = "scatter", mode = 'lines')%>%
+        add_trace(x= ~Month, y = ~Volume,  
+                  color = ~AVG_PS)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""))
+      
+      
+      p  <- plotly::subplot(h,h1, nrows = 2,shareX=F,shareY=F,titleX=T,titleY=T) %>% layout(showlegend=F)
+      
+      
+      p1 <- div(p, align = "center")
+      
+      return(suppressWarnings(print(p1)))
     }
-mercado_grafico10()
+x <- mercado_grafico10()
 ```
 
-
+```{r chunk11, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
+```
 
 After understand the market, we can set the categories more influencer for run the forecast model, is usual help in the computer performance because will work with less data.
 
-```{r,echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk12,echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 mercado_month <- function(){
       MBI <- manipulacao()
       aggregate(MBI[,c("Value","Volume")], by = list(Month = MBI$Month), FUN = sum)%>%
@@ -376,142 +397,97 @@ Another way to understand the table is plotting in a line chart by year. The dre
 - Value gradually dropped
 - Price rose month by month
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-mercado_grafico11 <- function(){
-      MBI <- manipulacao()
-      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
-        mutate(Price = round(Value / Volume,2))
-      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
-      t <- MBI_tb[MBI_tb$Atributos=="Volume",]%>%
-        ggplot(aes(y= Valores, x =Month)) + 
-        geom_line(stat = "identity") +
-        ggtitle("Volume") +
-        facet_grid(Year ~ ., scales = "free")+ 
-        theme_bw() +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_text(angle = 90, hjust = 1),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              plot.title = element_text(hjust = 0.5)) + 
-        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) +
-        scale_y_continuous(labels = scales::comma)
-      t
-    }
-mercado_grafico12 <- function(){
-      MBI <- manipulacao()
-      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
-        mutate(Price = round(Value / Volume,2))
-      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
-      t <- MBI_tb[MBI_tb$Atributos=="Value",]%>%
-        ggplot(aes(y= Valores, x =Month)) + 
-        geom_line(stat = "identity") +
-        ggtitle("Value") +
-        facet_grid(Year ~ ., scales = "free")+ 
-        theme_bw() +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_text(angle = 90, hjust = 1),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              plot.title = element_text(hjust = 0.5)) + 
-        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) +
-        scale_y_continuous(labels = scales::comma)
-      t
-    }
-mercado_grafico13 <- function(){
-      MBI <- manipulacao()
-      MBI_tb <- aggregate(MBI[,c("Value","Volume")], by = list(Year = MBI$Year,Month = MBI$Month), FUN = sum)%>%
-        mutate(Price = round(Value / Volume,2))
-      MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Value:Price)
-      t <- MBI_tb[MBI_tb$Atributos=="Price",]%>%
-        ggplot(aes(y= Valores, x =Month)) + 
-        geom_line(stat = "identity") +
-        ggtitle("Price") +
-        facet_grid(Year ~ ., scales = "free")+ 
-        theme_bw() +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_text(angle = 90, hjust = 1),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              plot.title = element_text(hjust = 0.5))  +
-        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) +
-        scale_y_continuous(labels = scales::comma)
-      t
-    }
-mercado_grafico11()
-mercado_grafico12()
-mercado_grafico13()
-```
-
 There are 2 facts more that could have strong influence in the market, Coverage and Shelf Life. Was calculated the mean by Year and Month, as you can see, the charts the coverage is decreasing since January 2015 so may be one of factor which has strong influence in the Market. The shelf life, in overall, keep in the same range and is clear to notice the sazonality in the end of the year. The histogram and density chart help us to detect any outlier which could mess up the mean result.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk13, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 mercado_grafico14 <- function(){
       MBI <- manipulacao()
       MBI_tb <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Coverage)
-      t <- MBI_tb[MBI_tb$Atributos=="Coverage",]%>%
-        ggplot(aes(y= Valores, x =Month)) + 
-        geom_line(stat = "identity") +
-        ggtitle("Coverage") +
-        facet_grid(Year ~ ., scales = "free")+ 
-        theme_bw() +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_text(angle = 90, hjust = 1),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              plot.title = element_text(hjust = 0.5)) + 
-        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) 
-      t
+      
+      h <- MBI_tb%>%
+        plot_ly(type = "scatter", mode = 'lines', name = "Coverage")%>%
+        add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Valores)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""),
+               showlegend = F)
+      
+      h1 <- div(h, align = "center")
+      
+    return(suppressWarnings(print(h1)))
+      
     }
 mercado_grafico15 <- function(){
       MBI <- manipulacao()
-      x <- density(MBI$Coverage, na.rm = TRUE)
-      hist(MBI$Coverage, main = "Coverage Histogram")
-      plot(x, main = "Coverage Kernel Distribution")
+      
+      #probability that an event will fall into the corresponding bin 
+      h <- MBI%>%
+        plot_ly(type = "histogram", name = "Coverage", histnorm = "probability density")%>%
+        add_trace(x= ~Coverage)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""),
+               showlegend = F)
+      
+      h1 <- div(h, align = "center")
+      
+    return(suppressWarnings(print(h1)))
     }
 mercado_grafico16 <- function(){
       MBI <- manipulacao()
       MBI_tb <- aggregate(MBI[,"Shelf_Availability"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
       MBI_tb <- MBI_tb%>%gather(Atributos, Valores, Shelf_Availability)
-      t <- MBI_tb[MBI_tb$Atributos=="Shelf_Availability",]%>%
-        ggplot(aes(y= Valores, x =Month)) + 
-        geom_line(stat = "identity") +
-        ggtitle("Shelf_Availability") +
-        facet_grid(Year ~ ., scales = "free")+ 
-        theme_bw() +
-        theme(axis.title.x=element_blank(),
-              axis.text.x=element_text(angle = 90, hjust = 1),
-              axis.ticks.x=element_blank(),
-              axis.title.y=element_blank(),
-              axis.ticks.y=element_blank(),
-              plot.title = element_text(hjust = 0.5)) + 
-        scale_x_continuous(labels = scales::comma,breaks = seq(1, 12, by = 1)) 
-      t
+      
+      h <- MBI_tb%>%
+        plot_ly(type = "scatter", mode = 'lines', name = "Shelf_Availability")%>%
+        add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Valores)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(zeroline = FALSE),
+               showlegend = F)
+      
+      h1 <- div(h, align = "center")
+
+     return(suppressWarnings(print(h1)))
+      
     }
 mercado_grafico17 <- function(){
       MBI <- manipulacao()
-      x <- density(MBI$Shelf_Availability, na.rm = TRUE)
-      par(mfrow=c(2,1))
-      y <- hist(MBI$Coverage, main = "Shelf Availability Histogram")
-      x1 <- plot(x, main = "Shelf Availability Kernel Distribution")
+      
+      #probability that an event will fall into the corresponding bin 
+      h <- MBI%>%
+        plot_ly(type = "histogram", name = "Shelf_Availability")%>%
+        add_trace(x= ~Shelf_Availability)%>%
+        layout(title = 'Styled Line',
+               yaxis = list(zeroline = FALSE),bargap = 5,
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE, title = ""),
+               showlegend = F)
+      
+      h1 <- div(h, align = "center")
+      
+      return(suppressWarnings(print(h1)))
     }
 
-mercado_grafico14()
-mercado_grafico15()
-mercado_grafico16()
-mercado_grafico17()
+x <- mercado_grafico14()
+x1 <- mercado_grafico15()
+x2 <- mercado_grafico16()
+x3 <- mercado_grafico17()
 ```
 
-For help us to identify the strong correlation in the variables, the two chart bellow will clarify all issue which could appear. We can conclued
+```{r chunk14, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
+x1
+x2
+x3
+```
+
+For help us to identify the strong correlation in the variables, the two chart bellow will clarify all issue which could appear. We can conclued.
 
 - The price variable is inverse corroelated to Volume, Coverage and Shelf Availability
 - The volume variable is corroelated to Coverage and Shelf Availability
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk15, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
     mercado_grafico19 <- function(){
       MBI <- manipulacao()
       MBI_tb1 <- aggregate(MBI[,"Coverage"], by = list(Year = MBI$Year,Month = MBI$Month), FUN = mean, na.rm = TRUE)
@@ -557,35 +533,7 @@ The forecast model that I used was [Prophet](https://research.fb.com/prophet-for
 
 The last month result in 2017, the brand Lili drop by 64,8% share volume and Gen up by 25,4% share volume, if you analyse the Price Index will be possible to realise the price has a strong influence because the brand Lili rose the price by 40% over the market price and the Glen brand dramatically dropped by 23% of market price.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-      mercado_grafico21 <- function(){
-        MBI <- manipulacao()
-        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI1 <- pareto(MBI,MBI$Value)
-        #MBI2 <- pareto(MBI,MBI$Volume)
-        MBI1$Brand <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Brand)
-        MBI1_1 <-  aggregate(MBI1[MBI1$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Brand=="OTHERS",]$Month, Year = MBI1[MBI1$Brand=="OTHERS",]$Year, Brand = MBI1[MBI1$Brand=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Brand = MBI1[MBI1$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- rbind(MBI1,MBI1_1)
-        MBI1$Price <- round(MBI1$Price,2)
-  
-        t <- MBI1%>%
-          ggplot(aes(x = Month, y= Volume, fill = Brand, size = Price)) + 
-          geom_point() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE)
-        ggplotly(t)
-      }
+```{r chunk16, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
       mercado_grafico23 <- function(){
         MBI <- manipulacao()
         #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
@@ -604,32 +552,31 @@ The last month result in 2017, the brand Lili drop by 64,8% share volume and Gen
         total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
         total_mercado_volume$Brand <- "Market"
         MBI2 <- rbind(MBI2,total_mercado_volume)
-        
         MBI2$Share_volume <- round(as.numeric(MBI2$Volume)/total_mercado_volume[match(paste(MBI2$Month,MBI2$Year,"Market", sep = " - "),paste(total_mercado_volume$Month,total_mercado_volume$Year,"Market", sep = " - ")),"Volume"],3)
         
-        t <- MBI2%>%
-          ggplot(aes(x = Month, y= Share_volume, colour = Brand)) + 
-          geom_line() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE) 
-        #+ geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
-        ggplotly(t)
+        h <- MBI2%>%
+          plot_ly(type = "scatter", mode = "lines")%>%
+          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Brand)%>%
+          layout(title = 'Styled Line',
+                 yaxis = list(zeroline = FALSE),bargap = 5,
+                 xaxis = list(zeroline = FALSE),
+                 showlegend = F)
+        
+        h1 <- div(h, align = "center")
+        
+        return(suppressWarnings(print(h1)))
       }
-      mercado_grafico21()
-      mercado_grafico23()
+      x <- mercado_grafico23()
+```
+
+```{r chunk17, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
 ```
 
 The Lily was chosen to apply a forecast, even the last share volume had a suddenly drop this won't reflect a long term.
 
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+```{r chunk18, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
     forecast1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
@@ -657,20 +604,21 @@ The Lily was chosen to apply a forecast, even the last share volume had a sudden
     M1 <- forecast1()
 ```
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk19, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 forecast_grafico1 <- function(){
-      
       future <- make_future_dataframe(M1, periods = 365)
       forecast <- predict(M1, future)
       x <- plot(M1, forecast)
-      return(ggplotly(x))
+      x1 <- ggplotly(x)
+      x2 <- div( x1, align="center" )
+      return(x2)
     }
 forecast_grafico1()
 ```
 
 I adopt the RSME and MAPE for valueate the model result. The dataset is not big enough to give a confident accuracy, I would need a compute more powerfull for consider a large dataset.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+```{r chunk20, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast_erro1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
@@ -709,7 +657,7 @@ forecast_erro1 <- function(){
 d <- forecast_erro1()
 ```
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk21, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 grid.table(d,rows=NULL)
 ```
 
@@ -717,79 +665,50 @@ grid.table(d,rows=NULL)
 
 The Cherry flavor has a scene more equal of share volume by 2015, the next year Harley brand has big variation a long the year that need to do a deep analyse for understand those movement whcih is unsual. 
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
-mercado_grafico25 <- function(){
-        MBI <- manipulacao()
-        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI1 <- pareto(MBI,MBI$Value)
-        #MBI2 <- pareto(MBI,MBI$Volume)
-        MBI1$Brand <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Brand)
-        MBI1_1 <-  aggregate(MBI1[MBI1$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Brand=="OTHERS",]$Month, Year = MBI1[MBI1$Brand=="OTHERS",]$Year, Brand = MBI1[MBI1$Brand=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Brand = MBI1[MBI1$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- rbind(MBI1,MBI1_1)
-        MBI1$Price <- round(MBI1$Price,2)
-        
-        t <- MBI1%>%
-          ggplot(aes(x = Month, y= Volume, fill = Brand, size = Price)) + 
-          geom_point() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE)
-        ggplotly(t)
-      }
-mercado_grafico27 <- function(){
+```{r chunk22, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
+mercado_grafico38 <- function(){
         MBI <- manipulacao()
         #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
         MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
         #MBI1 <- pareto(MBI,MBI$Value)
         MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Brand=="OTHERS",]$Month, Year = MBI2[MBI2$Brand=="OTHERS",]$Year, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
+        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
           mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
           mutate(Price = Value/Volume)
         MBI2 <- rbind(MBI2,MBI2_1)
         MBI2$Price <- round(MBI2$Price,2)
         
         total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
         total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-        total_mercado_volume$Brand <- "Market"
+        total_mercado_volume$Producer <- "Market"
         MBI2 <- rbind(MBI2,total_mercado_volume)
-        
         MBI2$Share_volume <- round(as.numeric(MBI2$Volume)/total_mercado_volume[match(paste(MBI2$Month,MBI2$Year,"Market", sep = " - "),paste(total_mercado_volume$Month,total_mercado_volume$Year,"Market", sep = " - ")),"Volume"],3)
         
-        t <- MBI2%>%
-          ggplot(aes(x = Month, y= Share_volume, colour = Brand)) + 
-          geom_line() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE) 
-        #+ geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
-        ggplotly(t)
-}
+        
+        h <- MBI2%>%
+          plot_ly(type = "scatter", mode = "lines")%>%
+          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Producer)%>%
+          layout(title = 'Styled Line',
+                 yaxis = list(zeroline = FALSE),bargap = 5,
+                 xaxis = list(zeroline = FALSE),
+                 showlegend = F)
+        
+        h1 <- div(h, align = "center")
+        
+      }
 
-mercado_grafico25()
-mercado_grafico27()
+x <- mercado_grafico38()
+```
+
+```{r chunk23, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
 ```
 
 I will choose the Harley brand to apply the forecast model for 2018.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+```{r chunk24, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Harley",]
@@ -817,20 +736,22 @@ forecast1 <- function(){
 M1 <- forecast1()
 ```
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk25, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 forecast_grafico1 <- function(){
       
       future <- make_future_dataframe(M1, periods = 365)
       forecast <- predict(M1, future)
       x <- plot(M1, forecast)
-      return(ggplotly(x))
+      x1 <- ggplotly(x)
+      x2 <- div( x1, align="center" )
+      return(x2)
     }
 forecast_grafico1()
 ```
 
 The model forecast get a good error result.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+```{r chunk26, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast_erro1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Harley",]
@@ -869,86 +790,55 @@ forecast_erro1 <- function(){
 d <- forecast_erro1()
 ```
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk27, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 grid.table(d,rows=NULL)
 ```
 
 ###Coffee
 
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
-mercado_grafico29 <- function(){
-        MBI <- manipulacao()
-        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI1 <- pareto(MBI,MBI$Value)
-        #MBI2 <- pareto(MBI,MBI$Volume)
-        MBI1$Brand <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Brand)
-        MBI1_1 <-  aggregate(MBI1[MBI1$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Brand=="OTHERS",]$Month, Year = MBI1[MBI1$Brand=="OTHERS",]$Year, Brand = MBI1[MBI1$Brand=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Brand = MBI1[MBI1$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- rbind(MBI1,MBI1_1)
-        MBI1$Price <- round(MBI1$Price,2)
-        
-        t <- MBI1%>%
-          ggplot(aes(x = Month, y= Volume, fill = Brand, size = Price)) + 
-          geom_point() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE)
-        ggplotly(t)
-}
-mercado_grafico31 <- function(){
+```{r chunk28, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
+mercado_grafico41 <- function(){
         MBI <- manipulacao()
         #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
         MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
         #MBI1 <- pareto(MBI,MBI$Value)
         MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Brand=="OTHERS",]$Month, Year = MBI2[MBI2$Brand=="OTHERS",]$Year, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
+        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
           mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
           mutate(Price = Value/Volume)
         MBI2 <- rbind(MBI2,MBI2_1)
         MBI2$Price <- round(MBI2$Price,2)
         
         total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
         total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-        total_mercado_volume$Brand <- "Market"
+        total_mercado_volume$Producer <- "Market"
         MBI2 <- rbind(MBI2,total_mercado_volume)
-        
         MBI2$Share_volume <- round(as.numeric(MBI2$Volume)/total_mercado_volume[match(paste(MBI2$Month,MBI2$Year,"Market", sep = " - "),paste(total_mercado_volume$Month,total_mercado_volume$Year,"Market", sep = " - ")),"Volume"],3)
         
-        t <- MBI2%>%
-          ggplot(aes(x = Month, y= Share_volume, colour = Brand)) + 
-          geom_line() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE) 
-        #+ geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
-        ggplotly(t)
-}
+        
+        h <- MBI2%>%
+          plot_ly(type = "scatter", mode = "lines")%>%
+          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Producer)%>%
+          layout(title = 'Styled Line',
+                 yaxis = list(zeroline = FALSE),bargap = 5,
+                 xaxis = list(zeroline = FALSE),
+                 showlegend = F)
+        
+        h1 <- div(h, align = "center")
+        
+      }
 
-mercado_grafico29()
-mercado_grafico31()
+x <- mercado_grafico41()
 ```
 
+```{r chunk29, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
+```
 
-
-```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+```{r chunk30, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Eshan",]
@@ -977,20 +867,22 @@ M1 <- forecast1()
 ```
 
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk31, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 forecast_grafico1 <- function(){
       
       future <- make_future_dataframe(M1, periods = 365)
       forecast <- predict(M1, future)
       x <- plot(M1, forecast)
-      return(ggplotly(x))
+      x1 <- ggplotly(x)
+      x2 <- div( x1, align="center" )
+      return(x2)
     }
 forecast_grafico1()
 ```
 
 The model forecast get a good error result.
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+```{r chunk32, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 forecast_erro1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Eshan",]
@@ -1030,43 +922,18 @@ d <- forecast_erro1()
 ```
 
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
+```{r chunk33, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 grid.table(d,rows=NULL)
 ```
 
+| ERROR         | Are           |
+| ------------- |--------------:|
+| RMSLE         | 1.22          |
+| MAPE          | 1.62          |
 
 #Producer market
 
-```{r , echo=FALSE, message=FALSE, warning=FALSE}
-mercado_grafico33 <- function(){
-        MBI <- manipulacao()
-        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI1 <- pareto(MBI,MBI$Value)
-        #MBI2 <- pareto(MBI,MBI$Volume)
-        MBI1$Producer <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Producer)
-        MBI1_1 <-  aggregate(MBI1[MBI1$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Producer=="OTHERS",]$Month, Year = MBI1[MBI1$Producer=="OTHERS",]$Year, Producer = MBI1[MBI1$Producer=="OTHERS",]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Producer = MBI1[MBI1$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- rbind(MBI1,MBI1_1)
-        MBI1$Price <- round(MBI1$Price,2)
-        
-        
-        t <- MBI1%>%
-          ggplot(aes(x = Month, y= Volume, fill = Producer, size = Price)) + 
-          geom_point() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE)
-        ggplotly(t)
-}
+```{r chunk34, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 mercado_grafico35 <- function(){
         MBI <- manipulacao()
         #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
@@ -1085,31 +952,28 @@ mercado_grafico35 <- function(){
         total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
         total_mercado_volume$Producer <- "Market"
         MBI2 <- rbind(MBI2,total_mercado_volume)
-        
         MBI2$Share_volume <- round(as.numeric(MBI2$Volume)/total_mercado_volume[match(paste(MBI2$Month,MBI2$Year,"Market", sep = " - "),paste(total_mercado_volume$Month,total_mercado_volume$Year,"Market", sep = " - ")),"Volume"],3)
         
-        t <- MBI2%>%
-          ggplot(aes(x = Month, y= Share_volume, colour = Producer)) + 
-          geom_line() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE) 
-        #+ geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
-        ggplotly(t)
+        
+        h <- MBI2%>%
+          plot_ly(type = "scatter", mode = "lines")%>%
+          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Producer)%>%
+          layout(title = 'Styled Line',
+                 yaxis = list(zeroline = FALSE),bargap = 5,
+                 xaxis = list(zeroline = FALSE),
+                 showlegend = F)
+        
+        h1 <- div(h, align = "center")
+        
       }
 
-mercado_grafico33()
-mercado_grafico35()
+x <- mercado_grafico35()
 
 ```
 
-
+```{r chunk35, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
+x
+```
 
 ##Forward Studies
 
@@ -1117,3 +981,4 @@ mercado_grafico35()
 - Rewrite on Python for be more flexible to access the tensorflow library then use Deep Learning Models.
 - Amplify the forecast model to others brand and producers.
 - Readjust the chart format to the markdown report.
+- Interactive plot in the report.
