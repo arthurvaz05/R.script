@@ -22,11 +22,17 @@ output: html_document
   library(shiny)
 manipulacao <- function(){
   #CARREGAR TABELA EXCEL
-  MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
-                      col_types = c("date", "text", "text", 
-                                    "text", "text", "numeric", "text", 
-                                    "numeric", "numeric", "numeric", 
-                                    "numeric"))
+   MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
+                       col_types = c("date", "text", "text", 
+                                     "text", "text", "numeric", "text", 
+                                     "numeric", "numeric", "numeric", 
+                                     "numeric"))
+  #MBI <- read_excel("C:/Users/Arthur Vaz/Desktop/Mix_Bev_Industry.xlsx", 
+  #                    col_types = c("date", "text", "text", 
+  #                                  "text", "text", "numeric", "text", 
+  #                                  "numeric", "numeric", "numeric", 
+  #                                  "numeric"))
+  
   #ADICIONAR A VARIAVEL MES
   MBI$Month <- month(MBI$Date)
   #ADICIONAR A VARIAVEL ANO
@@ -1057,7 +1063,7 @@ One of my doubt  is after June 2016, problably the price should have impacted th
 mercado_grafico1()
 ```
 
-A quick undestand which Flavor has more impact in the market, easly notice in the graphic bellow the Flavor Milk Chocolate has a huge impact in the market result. So could be interst to analyzes separete, for do that, was select three Flavors by  performance.
+A quick understand in the market by flavor , which one has more impact in the market? Easly notice in the graphic bellow the Milk Chocolate has a huge impact in the total result. Futurely, will be select top3 flavors for dig deeply in analyses.
 
 ```{r chunk2, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE, results="hide"}
 x <- mercado_grafico4()
@@ -1067,7 +1073,7 @@ x <- mercado_grafico4()
 x
 ```
 
-Now, you can check witouth be normalized. I had to use 3 different graph because the range of values is large, so if try to plot in a single chart, woulb clear the information.
+Without data normalized, still possible to verify the same flavor predominance
 
 ```{r chunk4, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico6()
@@ -1077,7 +1083,7 @@ x <- mercado_grafico6()
 x
 ```
 
-Analysing the material market, as easy to realise the plastic predominant, the clomun chart on the left is the value market and on the right volume market by material package. In the end of 2017 seems exist a inverse correlation or just a casuality because the campaing agains plastics are inrease nowadays.
+Analysing the market by material market, the plastic material has been dominante. Even though, the campaing against plastic is sharply rise and the customer is asking change. The enviromment question need to be a topic to consider in all strategy.
 
 ```{r chunk6, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico7()
@@ -1088,7 +1094,7 @@ x
 ```
 
 
-The caloric content always have been dominated by sugar, the graphic bellow can prove this sentence.
+The sugar do not seems be affected along years, the majority consumers rather sugar than diet/light in caloric content aspect.
 
 ```{r chunk8,echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico9()
@@ -1098,7 +1104,7 @@ x <- mercado_grafico9()
 x
 ```
 
-The market has two type of size package that lead the other.
+The big package leader has a interest movement in the graph below, in 2015 the value market had a fall back without rise the volume. In other words, is possible to say the demand is inelastic. But in the last months, the demand is elastic, so unless you considers macro economics facts, is possible to say the market reached the maximium demand for this size, also reached the right price. The very small package, is a profitable size, future analyses will be consider these two type of package
 
 ```{r chunk10,echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico10()
@@ -1108,7 +1114,7 @@ x <- mercado_grafico10()
 x
 ```
 
-After understand the market, we can set the categories more influencer for run the forecast model, is usual help in the computer performance because will work with less data.
+To sum up, the table below show by numbers the value market, volume market and price market by month and year.
 
 ```{r chunk12,echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 grid.arrange(tableGrob(mercado_year(), rows = NULL),
@@ -1116,13 +1122,8 @@ grid.arrange(tableGrob(mercado_year(), rows = NULL),
 
 ```
 
-Another way to understand the table is plotting in a line chart by year. The drecreasing moviment is not visible just in the chart along months, but is visible if we look at y axis. The same information that is in the table above, is confirm in the charts.
-
-- Volume dramatically dropped
-- Value gradually dropped
-- Price rose month by month
-
-There are 2 facts more that could have strong influence in the market, Coverage and Shelf Life. Was calculated the mean by Year and Month, as you can see, the charts the coverage is decreasing since January 2015 so may be one of factor which has strong influence in the Market. The shelf life, in overall, keep in the same range and is clear to notice the sazonality in the end of the year. The histogram and density chart help us to detect any outlier which could mess up the mean result.
+There are 2 more variables that could have strong influence in the market oscilation, Coverage and Shelf Life. Those charts below describing the mean by month and year. As you can notice, the coverage is decreasing since January 2015 so would be a strong potencial for be one of reason of volume market result. 
+The shelf life, in overall, keep in the same range and is clear the sazonality in the end of the year. The histogram and density chart help us to detect any outlier which could mess up the mean result.
 
 ```{r chunk13, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 
@@ -1139,30 +1140,42 @@ x2
 x3
 ```
 
-For help us to identify the strong correlation in the variables, the two chart bellow will clarify all issue which could appear. We can conclued.
+A good way to confirm the variable relation is use correlation matrix. The more is red, more is inverse correlated the variables. In the same way of blue color, the more blue is, more is correlect in the same direction. Can be conclued:
 
-- The price variable is inverse corroelated to Volume, Coverage and Shelf Availability
-- The volume variable is corroelated to Coverage and Shelf Availability
+- The price variable is inverse correlect to Volume, Coverage and Shelf Availability
+- The volume variable is correlect to Coverage and Shelf Availability
 
 ```{r chunk15, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
     mercado_grafico19()
     mercado_grafico20()
 ```
 
+The graph above, can be understanded 3 diferent things:
 
-Now, we are able to choose the best atributes for work with forecast with less data and the result will be able to describe the market as well. Follow the atributes:
+- normal distribution in scatter plot and red line, more the red line is in diagonal, more is equally distributed.
+- in the diagonal, histogram and densisty red line.
+- Correlation result.
+
+Help to confirm the correlation matrix result.
+
+##Second part
+
+The second part is use all the information that was shown then filter the data to apply forecast model. The goal is increase their model performance without loss data quality. Follow the attributes which will be consider.
 
 - Flavor: Milk Chocolate, Cherry and Coffe
 - Caloric Content: Sugar
 - Average Package Size: Big and very small
 
-We can not assume a cluster with these atributes together because was made analyse independet. So if the row has one of these tree atributes will be acptable to work. The cluster that has been create represent 97% of the whole volume and 96% of the whole value.
+We can not assume a cluster with these attributes together because was made independent analyse. The cluster that has been create represent 97% of the whole volume and 96% of the whole value. The data size decrease by 70% and the error is less than 10% in MAPE, MAE and RSME. Was made "OTHERS" cluster, it is a many small players together that won't mess up the analysis and keep the chart cleaner. Was applied pareto test to identify the "OTHERS" cluster.
 
-The forecast model that I used was [Prophet](https://research.fb.com/prophet-forecasting-at-scale/) developed by Facebbok. I will train the data with Prophet model and analyse the error if is acceptable to move on.
+The forecast model used was [Prophet](https://research.fb.com/prophet-forecasting-at-scale/) developed by Facebbok.
+
 
 #Brand market
 
-###Chocolate Milk
+
+##Chocolate Milk
+
 
 The last month result in 2017, the brand Lili drop by 64,8% share volume and Gen up by 25,4% share volume, if you analyse the Price Index will be possible to realise the price has a strong influence because the brand Lili rose the price by 40% over the market price and the Glen brand dramatically dropped by 23% of market price.
 
@@ -1185,19 +1198,10 @@ M1 <- forecast1()
 forecast_grafico1()
 ```
 
-I adopt the RSME and MAPE for valueate the model result. The dataset is not big enough to give a confident accuracy, I would need a compute more powerfull for consider a large dataset.
-
-```{r chunk20, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
-d <- forecast_erro1()
-```
-
-```{r chunk21, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
-grid.table(d,rows=NULL)
-```
 
 ###Cherry
 
-The Cherry flavor has a scene more equal of share volume by 2015, the next year Harley brand has big variation a long the year that need to do a deep analyse for understand those movement whcih is unsual. 
+The Cherry flavor has a scene more equal of share volume by 2015, the next year Harley brand has big variation along the year. In overall, Harley gained share in 2016, but 2017 loss the strength.
 
 ```{r chunk22, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico25()
@@ -1207,7 +1211,7 @@ x <- mercado_grafico25()
 x
 ```
 
-I will choose the Harley brand to apply the forecast model for 2018.
+Harley has good prediction to 2018.  
 
 ```{r chunk24, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 M1 <- forecast2()
@@ -1217,18 +1221,11 @@ M1 <- forecast2()
 forecast_grafico1()
 ```
 
-The model forecast get a good error result.
 
-```{r chunk26, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
-d <- forecast_erro1()
-```
-
-```{r chunk27, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
-grid.table(d,rows=NULL)
-```
 
 ###Coffee
 
+Edshan has almost a stationary graphic. Few big variation but in general keep close to average result line.
 
 ```{r chunk28, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico28()
@@ -1242,26 +1239,18 @@ x
 M1 <- forecast3()
 ```
 
+Edshan forecast is decreasing along 2018.
 
 ```{r chunk31, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
 forecast_grafico1()
-```
-
-The model forecast get a good error result.
-
-```{r chunk32, echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
-d <- forecast_erro1()
-```
-
-
-```{r chunk33, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90'}
-grid.table(d,rows=NULL)
 ```
 
 
 #Producer market
 
 ##Chocolate Milk
+
+The Chandler has the same result than your brand Lili. Seems to be the only one Chocolate Milk from Chandler or Lili has the majority then other Chocolate Milk from Chandler.
 
 ```{r chunk34, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico31()
@@ -1274,6 +1263,8 @@ x
 
 ##Cherry
 
+The Cherry market does not have a producer with strong presence, that could be a opportunity.
+
 ```{r chunk36, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 x <- mercado_grafico34()
 ```
@@ -1283,6 +1274,8 @@ x
 ```
 
 ##Coffee
+
+The Chandler has majority share in coffee market.
 
 ```{r chunk38, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 
@@ -1295,6 +1288,10 @@ x
 
 ##Contribution
 
+The contribution is a important KPI, because is possible to verify which brand is truly responsible of gain or loss of share.
+
+The cherry contribution of Ali producer has two product cannibalizing each other.
+
 ```{r chunk40, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 
 x <- mercado_grafico40()
@@ -1303,6 +1300,8 @@ x <- mercado_grafico40()
 ```{r chunk41, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
 x
 ```
+
+The cherry contribution of Goodman producer need do a deeply analyse. The chart below does not say so much.
 
 ```{r chunk42, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 
@@ -1313,6 +1312,8 @@ x <- mercado_grafico41()
 x
 ```
 
+The cherry contribution of Chandler producer need do a deeply analyse. The chart below does not say so much.
+
 ```{r chunk44, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 
 x <- mercado_grafico42()
@@ -1321,6 +1322,8 @@ x <- mercado_grafico42()
 ```{r chunk45, fig.align= 'right', echo=FALSE, message=FALSE,warning=FALSE}
 x
 ```
+
+The coffee contribution of Chandler producer has two product cannibalizing each other.
 
 ```{r chunk46, echo=FALSE, message=FALSE, warning=FALSE,fig.align='center',out.extra='angle=90', results="hide"}
 
@@ -1331,11 +1334,16 @@ x <- mercado_grafico43()
 x
 ```
 
+##Conclusio
+
+The report show how the market is performing along months, also which attributes has more relevance in the final result. With these information will be possible filter the data leaving unecessary informaction, also increasing the perfomance for trainning models. In the second part was possible to understand the big brands and how is expected to perfoman in few months forward. The same is for big Producer and the contirbution rate of your brand in the market.
+
 ##Forward Studies
 
 - Develop a model with external insight then predict how the market will react.
-- Rewrite on Python for be more flexible to access the tensorflow library then use Deep Learning Models.
+- Rewrite on Python for be more flexible.
 - Apply forecast model to others brand and producers.
 - Interactive plot in the report.
-- Month and Year in x axis share volume.
+- Month and Year label in x axis share volume.
 - Shiny application in the charts.
+- Erro result of all models.

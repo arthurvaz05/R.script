@@ -7,6 +7,9 @@
   devtools::install_github('hadley/ggplot2', force = TRUE)
   install.packages("corrplot")
   install.packages("PerformanceAnalytics")
+  install.packages('keras')
+  install.packages('dummies')
+  install_keras()
 }
 
 #BIBLIOTECAS
@@ -26,6 +29,13 @@
   library("Hmisc")
   library("PerformanceAnalytics")
   library(shiny)
+  library(keras)
+  library(tensorflow)
+  library(dummies)
+  Sys.setenv(KERAS_BACKEND = "keras")
+  Sys.setenv(THEANO_FLAGS = "device=gpu,floatX=float32")
+  library(forecast)
+  library(knitr)
 }
 
 #DATA MINING
@@ -33,12 +43,16 @@
   #CRIACAO DE VALORES, MUDANCA DE CLASSES SERAM FEITAS DENTRO DESSA FUNCAO
   manipulacao <- function(){
     #CARREGAR TABELA EXCEL
-    MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
+    #MBI <- read_excel("~/Desktop/Mix_Bev_Industry.xlsx", 
+    #                    col_types = c("date", "text", "text", 
+    #                                  "text", "text", "numeric", "text", 
+    #                                  "numeric", "numeric", "numeric", 
+    #                                  "numeric"))
+    MBI <- read_excel("C:/Users/Arthur Vaz/Desktop/Mix_Bev_Industry.xlsx", 
                       col_types = c("date", "text", "text", 
                                     "text", "text", "numeric", "text", 
                                     "numeric", "numeric", "numeric", 
                                     "numeric"))
-    #ADICIONAR A VARIAVEL MES
     MBI$Month <- month(MBI$Date)
     #ADICIONAR A VARIAVEL ANO
     MBI$Year <- year(MBI$Date)
@@ -412,7 +426,7 @@
           add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Valores)%>%
           layout(title = 'Shelf Availability Chart',
                  yaxis = list(zeroline = FALSE),bargap = 5,
-                 xaxis = list(zeroline = FALSE),
+                 xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE,              showline = FALSE, title = ""),
                  showlegend = F)
         
         h1 <- div(h, align = "center")
@@ -482,6 +496,96 @@
   {
     #MILK CHOCOLATE ANALYSE
     {
+      #SCRIPT DE COMPARACAO DO CLUSTER DO MILK CHOCOLATE COM E SEM RESTRICAO DE ATRIBUTOS
+        {
+        #SHARE VOLUME
+        MBI <- manipulacao()
+        MBI1 <- MBI
+        
+        #MERCADO TOTAL DE MILK CHOCOLATE SEM RESTRINCAO DE ATRIBUTOS
+        {
+          MBI <- MBI[MBI$Flavor==c("Milk Chocolate"),]
+          MBI2 <- aggregate(MBI[,c("Volume")], by = list(Year = MBI$Year, Month = MBI$Month, Brand = MBI$Brand), FUN = sum)
+          MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
+          
+          
+          total_mercado_volume <- aggregate(MBI[,"Volume"], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
+          colnames(total_mercado_volume) <- c("Month","Year","Volume_M")
+          total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
+          
+          MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Volume_M")], by = "Concat")
+          MBI2$Share_volume <- MBI2$Volume/MBI2$Volume_M
+          MBI5 <- MBI2
+          
+          h <- MBI2%>%
+            plot_ly(type = "scatter", mode = "lines")%>%
+            add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Brand)%>%
+            layout(title = 'Milk Chocolate Brand Market',
+                   yaxis = list(zeroline = FALSE, title = "Share Volume",range = c(0,1)),bargap = 5,
+                   xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE,title = "Date"),
+                   showlegend = T)
+          
+          x <- MBI5[MBI5$Brand=="Lili","Share_volume"]  
+        }
+        
+        #MERCADO TOTAL DE MILK CHOCOLATE COM RESTRINCAO DE ATRIBUTOS
+        {
+          MBI <- MBI1[MBI1$Flavor==c("Milk Chocolate") & MBI1$`Caloric Content`=="Sugar" & MBI1$AVG_PS==c("BIG","VERY SMALL"),]
+          MBI2 <- pareto(MBI,MBI$Volume)
+          MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
+          MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Brand=="OTHERS",]$Month, Year = MBI2[MBI2$Brand=="OTHERS",]$Year, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
+            mutate(Price = Value/Volume)
+          MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
+            mutate(Price = Value/Volume)
+          MBI2 <- rbind(MBI2,MBI2_1)
+          MBI2$Price <- round(MBI2$Price,2)
+          MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
+          
+          
+          total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
+          total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
+          total_mercado_volume$Brand <- "Market"
+          colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
+          total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
+          
+          MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Volume_M")], by = "Concat")
+          MBI2$Share_volume <- MBI2$Volume/MBI2$Volume_M
+          
+          y <- MBI2[MBI2$Brand=="Lili","Share_volume"] 
+        }
+        
+        i <- print(object.size(MBI5), units = "auto", standard = "SI") 
+        j <- print(object.size(MBI2), units = "auto", standard = "SI") 
+        error_size <- (object.size(MBI2)-object.size(MBI5))/object.size(MBI5)
+        
+        error = x - y 
+        
+        
+        
+        rmse <- function(error)
+        {
+          sqrt(mean(error^2))
+        }
+        
+        
+        mae <- function(error)
+        {
+          mean(abs(error))
+        }
+        
+        mape <- function(actual,pred){
+          mape <- mean(abs((actual - pred)/actual))
+          return (mape)
+        }
+        
+        # Example of invocation of functions
+        round(rmse(error),4)*100
+        round(mae(error),4)*100
+        round(mape(x,y),4)*100  
+        
+        
+        
+      }
       #PRICE INDEX
         mercado_grafico21 <- function(){
         MBI <- manipulacao()
@@ -521,9 +625,7 @@
       #SHARE VOLUME
         mercado_grafico22 <- function(){
           MBI <- manipulacao()
-          #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
           MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-          #MBI1 <- pareto(MBI,MBI$Value)
           MBI2 <- pareto(MBI,MBI$Volume)
           MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
           MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Brand=="OTHERS",]$Month, Year = MBI2[MBI2$Brand=="OTHERS",]$Year, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
@@ -853,94 +955,32 @@
   }
   #PRODUTOR
   {
-    #MILK CHOCOLATE ANALYSE
     {
-      #PRICE INDEX
-        mercado_grafico30 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI1 <- pareto(MBI,MBI$Value)
-        MBI1$Producer <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Producer)
-        MBI1_1 <-  aggregate(MBI1[MBI1$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Producer=="OTHERS",]$Month, Year = MBI1[MBI1$Producer=="OTHERS",]$Year, Producer = MBI1[MBI1$Producer=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Producer = MBI1[MBI1$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- rbind(MBI1,MBI1_1)
-        MBI1$Price <- round(MBI1$Price,2)
-        MBI1$Concat <- paste(MBI1$Month,MBI1$Year,sep = " - ")
-        
-        
-        total_mercado_preco <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_preco$Price <- round(total_mercado_preco$Value/total_mercado_preco$Volume,2)
-        total_mercado_preco$Brand <- "Market"
-        colnames(total_mercado_preco) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_preco$Concat <- paste(total_mercado_preco$Month,total_mercado_preco$Year, sep = " - ")
-        
-        MBI1 <- dplyr::left_join(MBI1,total_mercado_preco[,c("Concat","Price_M")], by = "Concat")
-        MBI1$Price_index <- round(MBI1$Price/MBI1$Price_M,2)
-        
-        
-        h <- MBI1%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Price_index,  color = ~Producer)%>%
-          layout(title = 'Styled Line',
-                 yaxis = list(zeroline = FALSE),bargap = 5,
-                 xaxis = list(zeroline = FALSE),
-                 showlegend = F)
-        
-        h1 <- div(h, align = "center")
-        
-        return(suppressWarnings(print(h1)))
-        
-        
-        t <- MBI1%>%
-          ggplot(aes(x = Month, y= Price_index, colour = Producer)) + 
-          geom_line() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE) + 
-          geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
-        ggplotly(t)
-      }
       #SHARE VOLUME
         mercado_grafico31 <- function(){
           MBI <- manipulacao()
-          MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-          MBI2 <- pareto(MBI,MBI$Volume)
-          MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
-          MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
-            mutate(Price = Value/Volume)
-          MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-            mutate(Price = Value/Volume)
-          MBI2 <- rbind(MBI2,MBI2_1)
-          MBI2$Price <- round(MBI2$Price,2)
-          MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
+          MBI <- aggregate(MBI[,c("Volume","Value")], by = list(Producer = MBI$Producer, Month = MBI$Month, Year = MBI$Year), FUN = sum)
+          MBI$Price <- round(MBI$Value/MBI$Volume,2)
+          MBI$Concat <- paste(MBI$Month,MBI$Year,sep = " - ")
           
           
           total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
           total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-          total_mercado_volume$Brand <- "Market"
-          colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
+          colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M")
           total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
           
-          MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Volume_M")], by = "Concat")
-          MBI2$Share_volume <- MBI2$Volume/MBI2$Volume_M
+          MBI <- dplyr::left_join(MBI,total_mercado_volume[,c("Concat","Volume_M")], by = "Concat")
+          MBI$Share_volume <- MBI$Volume/MBI$Volume_M
           
           #PROVA REAL DO SHARE VOLUME FECHANDO 1 NO MES E ANO
           {
-            pr <- aggregate(MBI2$Share_volume, by = list(MBI2$Month,MBI2$Year), sum)
+            pr <- aggregate(MBI$Share_volume, by = list(MBI$Month,MBI$Year), sum)
           }
           
-          h <- MBI2%>%
+          h <- MBI%>%
             plot_ly(type = "scatter", mode = "lines")%>%
             add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Producer)%>%
-            layout(title = 'Milk Chocolate Producer Market',
+            layout(title = 'Producer Market',
                    yaxis = list(zeroline = FALSE, title = "Share Volume",range = c(0,1)),bargap = 5,
                    xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE,title = "Date"),
                    showlegend = T)
@@ -950,321 +990,36 @@
         }
       #SHARE VALOR
         mercado_grafico32 <- function(){
-        MBI <- manipulacao()
-        #MBI <- MBI[MBI$Flavor==c("Milk Chocolate","Cherry","Coffe") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        #MBI1 <- pareto(MBI,MBI$Value)
-        MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- rbind(MBI2,MBI2_1)
-        MBI2$Price <- round(MBI2$Price,2)
-        MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
-        
-        
-        total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-        total_mercado_volume$Brand <- "Market"
-        colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
-        
-        MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Value_M")], by = "Concat")
-        MBI2$Share_value <- MBI2$Value/MBI2$Value_M
-        
-        #PROVA REAL DO SHARE VALOR FECHANDO 1 NO MES E ANO
-        {
-          pr <- aggregate(MBI2$Share_value, by = list(MBI2$Month,MBI2$Year), sum)
+          MBI <- manipulacao()
+          MBI <- aggregate(MBI[,c("Volume","Value")], by = list(Producer = MBI$Producer, Month = MBI$Month, Year = MBI$Year), FUN = sum)
+          MBI$Price <- round(MBI$Value/MBI$Volume,2)
+          MBI$Concat <- paste(MBI$Month,MBI$Year,sep = " - ")
+          
+          
+          total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
+          total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
+          colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M")
+          total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
+          
+          MBI <- dplyr::left_join(MBI,total_mercado_volume[,c("Concat","Value_M")], by = "Concat")
+          MBI$Share_value <- MBI$Value/MBI$Value_M
+          
+          #PROVA REAL DO SHARE VOLUME FECHANDO 1 NO MES E ANO
+          {
+            pr <- aggregate(MBI$Share_value, by = list(MBI$Month,MBI$Year), sum)
+          }
+          
+          h <- MBI%>%
+            plot_ly(type = "scatter", mode = "lines")%>%
+            add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_value,  color = ~Producer)%>%
+            layout(title = 'Producer Market',
+                   yaxis = list(zeroline = FALSE, title = "Share value",range = c(0,1)),bargap = 5,
+                   xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE,title = "Date"),
+                   showlegend = T)
+          
+          h1 <- div(h, align = "center")
+          
         }
-        
-        h <- MBI2%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= ~list(Year = MBI$Year,Month = MBI$Month), y = ~Share_value,  color = ~Producer)%>%
-          layout(title = 'Styled Line',
-                 yaxis = list(zeroline = FALSE),bargap = 5,
-                 xaxis = list(zeroline = FALSE),
-                 showlegend = F)
-        
-        h1 <- div(h, align = "center")
-        
-        return(suppressWarnings(print(h1)))
-      }
-    }
-    #CHERRY ANALYSE
-    {
-      #PRICE INDEX
-        mercado_grafico33 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI1 <- pareto(MBI,MBI$Value)
-        MBI1$Producer <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Producer)
-        MBI1_1 <-  aggregate(MBI1[MBI1$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Producer=="OTHERS",]$Month, Year = MBI1[MBI1$Producer=="OTHERS",]$Year, Producer = MBI1[MBI1$Producer=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Producer = MBI1[MBI1$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- rbind(MBI1,MBI1_1)
-        MBI1$Price <- round(MBI1$Price,2)
-        MBI1$Concat <- paste(MBI1$Month,MBI1$Year,sep = " - ")
-        
-        
-        total_mercado_preco <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_preco$Price <- round(total_mercado_preco$Value/total_mercado_preco$Volume,2)
-        total_mercado_preco$Brand <- "Market"
-        colnames(total_mercado_preco) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_preco$Concat <- paste(total_mercado_preco$Month,total_mercado_preco$Year, sep = " - ")
-        
-        MBI1 <- dplyr::left_join(MBI1,total_mercado_preco[,c("Concat","Price_M")], by = "Concat")
-        MBI1$Price_index <- round(MBI1$Price/MBI1$Price_M,2)
-        
-        
-        h <- MBI1%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Price_index,  color = ~Producer)%>%
-          layout(title = 'Styled Line',
-                 yaxis = list(zeroline = FALSE),bargap = 5,
-                 xaxis = list(zeroline = FALSE),
-                 showlegend = F)
-        
-        h1 <- div(h, align = "center")
-        
-        return(suppressWarnings(print(h1)))
-        
-        
-        t <- MBI1%>%
-          ggplot(aes(x = Month, y= Price_index, colour = Producer)) + 
-          geom_line() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE) + 
-          geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
-        ggplotly(t)
-      }
-      #SHARE VOLUME
-      mercado_grafico34 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- rbind(MBI2,MBI2_1)
-        MBI2$Price <- round(MBI2$Price,2)
-        MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
-        
-        
-        total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-        total_mercado_volume$Brand <- "Market"
-        colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
-        
-        MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Volume_M")], by = "Concat")
-        MBI2$Share_volume <- MBI2$Volume/MBI2$Volume_M
-        
-        #PROVA REAL DO SHARE VOLUME FECHANDO 1 NO MES E ANO
-        {
-          pr <- aggregate(MBI2$Share_volume, by = list(MBI2$Month,MBI2$Year), sum)
-        }
-        
-        h <- MBI2%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Producer)%>%
-          layout(title = 'Cherry Producer Market',
-                 yaxis = list(zeroline = FALSE, title = "Share Volume",range = c(0,1)),bargap = 5,
-                 xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE,title = "Date"),
-                 showlegend = T)
-        
-        h1 <- div(h, align = "center")
-        
-      }
-      #SHARE VALOR
-        mercado_grafico35 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- rbind(MBI2,MBI2_1)
-        MBI2$Price <- round(MBI2$Price,2)
-        MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
-        
-        
-        total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-        total_mercado_volume$Brand <- "Market"
-        colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
-        
-        MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Value_M")], by = "Concat")
-        MBI2$Share_value <- MBI2$Value/MBI2$Value_M
-        
-        #PROVA REAL DO SHARE VALOR FECHANDO 1 NO MES E ANO
-        {
-          pr <- aggregate(MBI2$Share_value, by = list(MBI2$Month,MBI2$Year), sum)
-        }
-        
-        h <- MBI2%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= ~list(Year = MBI$Year,Month = MBI$Month), y = ~Share_value,  color = ~Producer)%>%
-          layout(title = 'Styled Line',
-                 yaxis = list(zeroline = FALSE),bargap = 5,
-                 xaxis = list(zeroline = FALSE),
-                 showlegend = F)
-        
-        h1 <- div(h, align = "center")
-        
-        return(suppressWarnings(print(h1)))
-      }
-    }
-    #COFFE ANALYSE
-    {
-      #PRICE INDEX
-        mercado_grafico36 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI1 <- pareto(MBI,MBI$Value)
-        MBI1$Producer <- ifelse(MBI1$cum_freq>0.2,"OTHERS",MBI1$Producer)
-        MBI1_1 <-  aggregate(MBI1[MBI1$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI1[MBI1$Producer=="OTHERS",]$Month, Year = MBI1[MBI1$Producer=="OTHERS",]$Year, Producer = MBI1[MBI1$Producer=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- aggregate(MBI1[MBI1$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI1[MBI1$cum_freq <= 0.2,]$Month, Year = MBI1[MBI1$cum_freq <= 0.2,]$Year, Producer = MBI1[MBI1$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI1 <- rbind(MBI1,MBI1_1)
-        MBI1$Price <- round(MBI1$Price,2)
-        MBI1$Concat <- paste(MBI1$Month,MBI1$Year,sep = " - ")
-        
-        
-        total_mercado_preco <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_preco$Price <- round(total_mercado_preco$Value/total_mercado_preco$Volume,2)
-        total_mercado_preco$Brand <- "Market"
-        colnames(total_mercado_preco) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_preco$Concat <- paste(total_mercado_preco$Month,total_mercado_preco$Year, sep = " - ")
-        
-        MBI1 <- dplyr::left_join(MBI1,total_mercado_preco[,c("Concat","Price_M")], by = "Concat")
-        MBI1$Price_index <- round(MBI1$Price/MBI1$Price_M,2)
-        
-        
-        h <- MBI1%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Price_index,  color = ~Producer)%>%
-          layout(title = 'Styled Line',
-                 yaxis = list(zeroline = FALSE),bargap = 5,
-                 xaxis = list(zeroline = FALSE),
-                 showlegend = F)
-        
-        h1 <- div(h, align = "center")
-        
-        return(suppressWarnings(print(h1)))
-        
-        
-        t <- MBI1%>%
-          ggplot(aes(x = Month, y= Price_index, colour = Producer)) + 
-          geom_line() + 
-          facet_grid(Year ~ .) +
-          theme(axis.title.x=element_blank(),
-                axis.text.x=element_blank(),
-                axis.ticks.x=element_blank(),
-                axis.title.y=element_blank(),
-                axis.text.y=element_blank(),
-                axis.ticks.y=element_blank(),
-                strip.text = element_text(size=10)) +
-          guides(fill=FALSE) + 
-          geom_line(linetype = "dashed",aes(x = Month, y= 1),color="black", size=1)
-        ggplotly(t)
-      }
-      #SHARE VOLUME
-      mercado_grafico37 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- rbind(MBI2,MBI2_1)
-        MBI2$Price <- round(MBI2$Price,2)
-        MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
-        
-        
-        total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-        total_mercado_volume$Brand <- "Market"
-        colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
-        
-        MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Volume_M")], by = "Concat")
-        MBI2$Share_volume <- MBI2$Volume/MBI2$Volume_M
-        
-        #PROVA REAL DO SHARE VOLUME FECHANDO 1 NO MES E ANO
-        {
-          pr <- aggregate(MBI2$Share_volume, by = list(MBI2$Month,MBI2$Year), sum)
-        }
-        
-        h <- MBI2%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= list(Year = MBI$Year,Month = MBI$Month), y = ~Share_volume,  color = ~Producer)%>%
-          layout(title = 'Coffee Producer Market',
-                 yaxis = list(zeroline = FALSE, title = "Share Volume",range = c(0,1)),bargap = 5,
-                 xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, showline = FALSE,title = "Date"),
-                 showlegend = T)
-        
-        h1 <- div(h, align = "center")
-        
-      }
-      #SHARE VALOR
-        mercado_grafico38 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL"),]
-        MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Producer <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Producer)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Producer=="OTHERS",c("Volume","Value")], by = list(Month = MBI2[MBI2$Producer=="OTHERS",]$Month, Year = MBI2[MBI2$Producer=="OTHERS",]$Year, Producer = MBI2[MBI2$Producer=="OTHERS",]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Month = MBI2[MBI2$cum_freq <= 0.2,]$Month, Year = MBI2[MBI2$cum_freq <= 0.2,]$Year, Producer = MBI2[MBI2$cum_freq <= 0.2,]$Producer), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- rbind(MBI2,MBI2_1)
-        MBI2$Price <- round(MBI2$Price,2)
-        MBI2$Concat <- paste(MBI2$Month,MBI2$Year,sep = " - ")
-        
-        
-        total_mercado_volume <- aggregate(MBI[,c("Volume","Value")], by = list(Month = MBI$Month, Year = MBI$Year), FUN = sum)
-        total_mercado_volume$Price <- round(total_mercado_volume$Value/total_mercado_volume$Volume,2)
-        total_mercado_volume$Brand <- "Market"
-        colnames(total_mercado_volume) <- c("Month","Year","Volume_M","Value_M","Price_M","Brand")
-        total_mercado_volume$Concat <- paste(total_mercado_volume$Month,total_mercado_volume$Year, sep = " - ")
-        
-        MBI2 <- dplyr::left_join(MBI2,total_mercado_volume[,c("Concat","Value_M")], by = "Concat")
-        MBI2$Share_value <- MBI2$Value/MBI2$Value_M
-        
-        #PROVA REAL DO SHARE VALOR FECHANDO 1 NO MES E ANO
-        {
-          pr <- aggregate(MBI2$Share_value, by = list(MBI2$Month,MBI2$Year), sum)
-        }
-        
-        h <- MBI2%>%
-          plot_ly(type = "scatter", mode = "lines")%>%
-          add_trace(x= ~list(Year = MBI$Year,Month = MBI$Month), y = ~Share_value,  color = ~Producer)%>%
-          layout(title = 'Styled Line',
-                 yaxis = list(zeroline = FALSE),bargap = 5,
-                 xaxis = list(zeroline = FALSE),
-                 showlegend = F)
-        
-        h1 <- div(h, align = "center")
-        
-        return(suppressWarnings(print(h1)))
-      }
     }
   }
 }
@@ -1555,22 +1310,14 @@
   
 }
 
-#MODELO PREDITIVO MARCA - MARCA
+#MODELO PREDITIVO ADOTADO - MARCA - PROPEHET FACEBOOK
 {
   #MILK CHOCOLATE - LILI BRAND
   {
     forecast1 <- function(){
       MBI <- manipulacao()
       MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
-      MBI2 <- pareto(MBI,MBI$Volume)
-      MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
-      MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
-        mutate(Price = Value/Volume)
-      MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Date = MBI2[MBI2$cum_freq <= 0.2,]$Date, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
-        mutate(Price = Value/Volume)
-      MBI2 <- rbind(MBI2,MBI2_1)
-      MBI2$Price <- round(MBI2$Price,2)
-      MBI_MERCADO <- MBI2
+      MBI_MERCADO <- MBI
       
       M <- MBI_MERCADO[,c("Date","Volume")]
       ## 75% DO TAMANHO DA AMOSTRA
@@ -1799,13 +1546,62 @@
 #https://peerj.com/preprints/3190.pdf
 }
 
-#MODELO PREDITIVO MARCA - PRODUTO
+#MODELO PREDITIVO ADOTADO - PRODUTO - PROPEHET FACEBOOK
 {
-    #MILK CHOCOLATE - CHANDLER
+    # CHANDLER
     {
       forecast1 <- function(){
         MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Chandler",]
+        MBI <- MBI[MBI$Producer=="Chandler",]
+        MBI$Price <- round(MBI$Value/MBI$Volume,2)
+        MBI_MERCADO <- MBI
+        
+        M <- MBI_MERCADO[,c("Date","Volume")]
+        ## 75% DO TAMANHO DA AMOSTRA
+        tamanho_amostra <- floor(0.75 * nrow(M))
+        
+        train <- M[1:tamanho_amostra, ]
+        test <- M[tamanho_amostra:NROW(M), ]
+        colnames(train) <- c('ds', 'y')
+        train <- na.omit(train)
+        M1 <- prophet::prophet(train)
+        return(M1)
+      }
+      forecast_erro1 <- function(){
+        MBI <- manipulacao()
+        MBI <- MBI[MBI$Producer=="Chandler",]
+        MBI$Price <- round(MBI$Value/MBI$Volume,2)
+        MBI_MERCADO <- MBI
+        
+        M <- MBI_MERCADO[,c("Date","Volume")]
+        ## 75% DO TAMANHO DA AMOSTRA
+        tamanho_amostra <- floor(0.75 * nrow(M))
+        
+        train <- M[1:tamanho_amostra, ]
+        test <- M[tamanho_amostra:NROW(M), ]
+        M1 <- forecast1()
+        future <- make_future_dataframe(M1, periods = 365)
+        forecast <- predict(M1, future)  
+        forc <- forecast[,c("ds","yhat")]
+        colnames(forc) <- c("Date","Volume")
+        test <- dplyr::left_join(test,forc, by = "Date")
+        #test <- plyr::join(test,forc, by = "Date", type = "left")
+        test <- na.omit(test)
+        d <-   list(
+          "rmsle" = round(rmsle(test$Volume.x,test$Volume.y),2),
+          "mape" = round(mape(test$Volume.x,test$Volume.y),2),
+          "mae" = mae(test$Volume.x,test$Volume.y),
+          "rmse" = rmse(test$Volume.x,test$Volume.y)
+        )
+        d <- as.data.frame(d)
+        grid.table(d,rows=NULL)
+      } 
+    }
+    # ALI
+    {
+      forecast1 <- function(){
+        MBI <- manipulacao()
+        MBI <- MBI[MBI$Brand=="Ali",]
         MBI2 <- pareto(MBI,MBI$Volume)
         MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
         MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
@@ -1829,7 +1625,7 @@
       }
       forecast_erro1 <- function(){
         MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Chandler",]
+        MBI <- MBI[MBI$Brand=="Ali",]
         MBI2 <- pareto(MBI,MBI$Volume)
         MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
         MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
@@ -1864,11 +1660,11 @@
         grid.table(d,rows=NULL)
       } 
     }
-    #CHERRY - ALI - CHANDLER - GOODMAN
+    #GOODMAN
     {
       forecast1 <- function(){
         MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Ali",]
+        MBI <- MBI[MBI$Brand=="Goodman",]
         MBI2 <- pareto(MBI,MBI$Volume)
         MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
         MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
@@ -1892,70 +1688,7 @@
       }
       forecast_erro1 <- function(){
         MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Cherry") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Ali",]
-        MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Date = MBI2[MBI2$cum_freq <= 0.2,]$Date, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- rbind(MBI2,MBI2_1)
-        MBI2$Price <- round(MBI2$Price,2)
-        MBI_MERCADO <- MBI2
-        
-        M <- MBI_MERCADO[,c("Date","Volume")]
-        ## 75% DO TAMANHO DA AMOSTRA
-        tamanho_amostra <- floor(0.75 * nrow(M))
-        
-        train <- M[1:tamanho_amostra, ]
-        test <- M[tamanho_amostra:NROW(M), ]
-        M1 <- forecast1()
-        future <- make_future_dataframe(M1, periods = 365)
-        forecast <- predict(M1, future)  
-        forc <- forecast[,c("ds","yhat")]
-        colnames(forc) <- c("Date","Volume")
-        test <- dplyr::left_join(test,forc, by = "Date")
-        #test <- plyr::join(test,forc, by = "Date", type = "left")
-        test <- na.omit(test)
-        d <-   list(
-          "rmsle" = round(rmsle(test$Volume.x,test$Volume.y),2),
-          "mape" = round(mape(test$Volume.x,test$Volume.y),2),
-          "mae" = mae(test$Volume.x,test$Volume.y),
-          "rmse" = rmse(test$Volume.x,test$Volume.y)
-        )
-        d <- as.data.frame(d)
-        grid.table(d,rows=NULL)
-      } 
-    }
-    #COFFEE - CHANDLER
-    {
-      forecast1 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Chandler",]
-        MBI2 <- pareto(MBI,MBI$Volume)
-        MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
-        MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- aggregate(MBI2[MBI2$cum_freq <= 0.2,c("Volume","Value")], by = list(Date = MBI2[MBI2$cum_freq <= 0.2,]$Date, Brand = MBI2[MBI2$cum_freq <= 0.2,]$Brand), FUN = sum)%>%
-          mutate(Price = Value/Volume)
-        MBI2 <- rbind(MBI2,MBI2_1)
-        MBI2$Price <- round(MBI2$Price,2)
-        MBI_MERCADO <- MBI2
-        
-        M <- MBI_MERCADO[,c("Date","Volume")]
-        ## 75% DO TAMANHO DA AMOSTRA
-        tamanho_amostra <- floor(0.75 * nrow(M))
-        
-        train <- M[1:tamanho_amostra, ]
-        test <- M[tamanho_amostra:NROW(M), ]
-        colnames(train) <- c('ds', 'y')
-        train <- na.omit(train)
-        M1 <- prophet::prophet(train)
-        return(M1)
-      }
-      forecast_erro1 <- function(){
-        MBI <- manipulacao()
-        MBI <- MBI[MBI$Flavor==c("Coffee") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Chandler",]
+        MBI <- MBI[MBI$Brand=="Goodman",]
         MBI2 <- pareto(MBI,MBI$Volume)
         MBI2$Brand <- ifelse(MBI2$cum_freq>0.2,"OTHERS",MBI2$Brand)
         MBI2_1 <-  aggregate(MBI2[MBI2$Brand=="OTHERS",c("Volume","Value")], by = list(Date = MBI2[MBI2$Brand=="OTHERS",]$Date, Brand = MBI2[MBI2$Brand=="OTHERS",]$Brand), FUN = sum)%>%
@@ -2038,4 +1771,308 @@
     }
     #https://towardsdatascience.com/using-open-source-prophet-package-to-make-future-predictions-in-r-ece585b73687
     #https://peerj.com/preprints/3190.pdf
+}
+
+#MODELOS TESTADOS DE PREVISAO DE VENDA
+{
+  #DEEP LERINING FORECAST - KERAS - LSTM
+  {
+    MBI <- manipulacao()
+    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+    MBI_MERCADO <- MBI
+    
+    M <- aggregate(MBI_MERCADO[,c("Volume")], by = list(Date = MBI_MERCADO$Date), FUN = sum)
+    M$Year <- year(M$Date)  
+    M$Month <- month(M$Date)
+    
+    df <- M
+    N = nrow(df)
+    p = ncol(df)
+    
+    df1 <- df[,"Volume"]
+    df2 <- df[,-2]
+    df3 <- cbind(df2,df1)
+    
+    
+    X = dummy.data.frame(df[, -p])
+    Y = df[, p]
+    
+    data = cbind(X, Y)
+    
+    p = ncol(data)
+    
+    Y_train = data.matrix(df[1:(NROW(df)*0.7), "Date"])
+    X_train  = data.matrix(df[1:(NROW(df)*0.7), "Volume"])
+    
+    Y_test = data.matrix(df[((NROW(df)*0.7)+1):NROW(df), "Date"])
+    X_test  = data.matrix(df[((NROW(df)*0.7)+1):NROW(df), "Volume"])
+    
+    
+    k = ncol(X_train)
+    
+    
+    model <- keras_model_sequential() 
+    model %>% 
+      layer_dense(units = 60, activation = 'relu', input_shape = k) %>% 
+      layer_dropout(rate = 0.2) %>% 
+      layer_dense(units = 50, activation = 'relu') %>%
+      layer_dropout(rate = 0.2) %>%
+      layer_dense(units = 1, activation = 'sigmoid')
+    
+    summary(model)
+    
+    model %>% compile(
+      loss = 'binary_crossentropy',
+      optimizer = optimizer_adam( lr= 0.0001 , decay = 1e-6 ),  
+      metrics = c('accuracy')
+      
+    )
+    
+    
+    track = model %>% fit(X_train, Y_train, epochs = 1500, batch_size = 10,
+                          callbacks = callback_early_stopping(patience = 2, monitor = 'acc'),
+                          validation_split = 0.3
+    )
+    plot(track)
+    
+    
+    
+    ##prediction 
+    pred <- model %>% predict(X_test, batch_size = 128)
+    Y_pred = round(pred)
+    # Confusion matrix
+    CM = table(Y_pred, Y_test)
+    
+    # evaluate the model
+    evals <- model %>% evaluate(X_test, Y_test, batch_size = 10)
+    
+    accuracy = evals[2][[1]]* 100
+    
+    
+    #FONTES :
+    {
+      #https://www.linkedin.com/pulse/finally-deep-learning-keras-tensorflow-r-richard-wanjohi-ph-d/
+      #https://cran.r-project.org/web/packages/keras/vignettes/faq.html
+      #https://machinelearningmastery.com/multi-step-time-series-forecasting-long-short-term-memory-networks-python/
+      #https://stackoverflow.com/questions/42379138/keras-valueerror-no-data-provided-for-input-1-need-data-for-each-key
+    } 
   }
+  
+  #ARIMA
+  {
+    # # The reason I took up this section first was that until unless your time series is stationary, 
+    # you cannot build a time series model. In cases where the stationary criterion are violated, 
+    # the first requisite becomes to stationarize the time series and then try stochastic models to predict this time series. 
+    # There are multiple ways of bringing this stationarity. Some of them are Detrending, Differencing etc.
+    #But before we start, you should remember, AR or MA are not applicable on non-stationary series.
+    
+    # De-trending is fundamental. This includes regressing against covariates other than time.
+    # 
+    # Seasonal adjustment is a version of taking differences but could be construed as a separate technique.
+    # 
+    # Transformation of the data implicitly converts a difference operator into something else; e.g., differences of the logarithms are actually ratios.
+    
+    #teste de estacionariedade dos dados
+    MBI <- manipulacao()
+    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+    MBI_MERCADO <- MBI
+    
+    M <- aggregate(MBI_MERCADO[,c("Volume")], by = list(Date = MBI_MERCADO$Date), FUN = sum)
+    M$Year <- year(M$Date)  
+    M$Month <- month(M$Date)
+    
+    
+    #VERIFICAR GRAFICAMENTE
+    plot_ly(M, y = M$Volume, x = M$Date, type = "scatter", mode = "lines")
+    #SUMMARY ESTATISTICA VERIFICACAO
+    hist(M$Volume)
+    
+    #If the p-value is lower than 0.05 it is significant at the 95% confidence threshold.
+    install.packages("fUnitRoots")
+    library(tseries)
+    library(xts)
+    library(fUnitRoots)
+    # Null Hypotehsis (H0): If accepted, it suggests the time series has a unit root, meaning it is non-stationary. It has some time dependent structure.
+    # Alternate Hypothesis (H1): The null hypothesis is rejected; it suggests the time series does not have a unit root, meaning it is stationary.
+    # p-value > 0.05: Accept H0, the data has a unit root and is non-stationary
+    # p-value ≤ 0.05: Reject H0. the data does not have a unit root and is stationary
+    adf.test(M$Volume, alternative = "stationary", k = 0) #levemente nao estacionaria
+    adfTest(M$Volume, lags = 0, type = "nc") #nao estacionaria
+    adfTest(M$Volume, lags = 0, type = "ct") #levemente nao estacionaria
+    adfTest(M$Volume, lags = 0, type = "c") #estacionaria
+    #FONTES
+    {
+      #https://medium.com/@kangeugine/time-series-check-stationarity-1bee9085da05
+      #http://fabian-kostadinov.github.io/2015/01/27/comparing-adf-test-functions-in-r/
+      
+    }
+    
+    adf.test(diff(log(M$Volume)), alternative = "stationary", k = 0) # estacionaria
+    
+    acf(M$Volume)
+    acf(diff(log(M$Volume)))
+    acf(log(M$Volume))
+    
+    pacf(M$Volume)
+    pacf(diff(log(M$Volume)))
+    pacf(log(M$Volume))
+    
+    fit <- arima(log(M$Volume), c(0, 1, 1),seasonal = list(order = c(1, 1, 0), period = 12))
+    pred <- predict(fit, n.ahead = 10*12)
+    ts.plot(M$Volume,2.718^pred$pred, log = "y", lty = c(1,3))  
+    
+    
+  }
+  
+  #AUTOARIMA
+  {
+    MBI <- manipulacao()
+    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+    MBI_MERCADO <- MBI
+    
+    M <- aggregate(MBI_MERCADO[,c("Volume")], by = list(Date = MBI_MERCADO$Date), FUN = sum)
+    
+    df <- M
+    N = nrow(df)
+    p = ncol(df)
+    
+    Y_train = df[1:(NROW(df)*0.7), "Date"]
+    X_train  = df[1:(NROW(df)*0.7), "Volume"]
+    
+    Y_test = df[((NROW(df)*0.7)+1):NROW(df), "Date"]
+    X_test  = df[((NROW(df)*0.7)+1):NROW(df), "Volume"]
+    
+    xi <- ts(M$Volume, frequency = 12 , start = c(2015,1))
+    pi <- auto.arima(xi)
+    summary(pi)
+    q <- forecast(pi, h = 20)
+    plot(q)  
+    qqnorm(pi$residuals)
+    acf(pi$residuals)
+  }
+  
+  #NAIVE SAZONAL
+  {
+    MBI <- manipulacao()
+    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+    MBI_MERCADO <- MBI
+    M <- aggregate(MBI_MERCADO[,c("Volume")], by = list(Date = MBI_MERCADO$Date), FUN = sum)
+    M$Year <- year(M$Date)
+    M$Month <- month(M$Date)
+    
+    df <- M
+    N = nrow(df)
+    p = ncol(df)
+    
+    Y_train = df[1:(NROW(df)*0.7), "Date"]
+    X_train  = df[1:(NROW(df)*0.7), "Volume"]
+    
+    Y_test = df[((NROW(df)*0.7)+1):NROW(df), "Date"]
+    X_test  = df[((NROW(df)*0.7)+1):NROW(df), "Volume"]
+    
+    
+    
+    plot_ly(M, x = ~Month, y = ~Volume, color = ~Year, type = "scatter")%>%
+      layout(title = 'Styled Line',
+             yaxis = list(zeroline = FALSE),bargap = 5,
+             xaxis = list(zeroline = FALSE),
+             showlegend = F)
+    
+    m1.ts <- ts(M$Volume, start = c(2015,1), end = c(2017,12), frequency = 12)
+    time <- time(m1.ts)
+    n.valid <- 10
+    n.train <- length(m1.ts) - n.valid
+    m1.train.ts <- window(m1.ts, start=time[1], end=time[n.train])
+    m1.valid.ts <- window(m1.ts, start=time[n.train+1], end=time[n.train+n.valid])
+    
+    snaive.red <- snaive(m1.train.ts, h=10)
+    naive.red <- naive(m1.train.ts, h=10)
+    
+    indexs <- c(2,3,5) ## Only RMSE, MAE, and MAPE.
+    acc.naive.red <- accuracy(snaive.red, m1.valid.ts)
+    acc.naive.red <- acc.naive.red[, indexs]
+    kable(acc.naive.red)
+    
+    plot(m1.ts,  main="Forecast for monthly red wine sales", xlab="Time", ylab="Thousand of liters")
+    lines(naive.red$mean, col=4)
+    
+    lines(snaive.red$mean, col=2)
+    
+    legend("topright", lty=1, col=c(4,2), 
+           legend=c("Naive method", "Seasonal naive method"))
+    
+    #FONTES
+    {
+      # https://campus.datacamp.com/courses/forecasting-using-r/benchmark-methods-and-forecast-accuracy?ex=2
+      # https://stats.stackexchange.com/questions/179212/seasonal-naive-in-forecast-package-with-multi-step-prediction
+      # https://otexts.org/fpp2/simple-methods.html
+      # https://rstudio-pubs-static.s3.amazonaws.com/224141_e09871c7757944928463c8f9de0baa42.html
+    }
+    
+  }
+  
+  #RL SAZONAL
+  {
+    MBI <- manipulacao()
+    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+    MBI_MERCADO <- MBI
+    M <- aggregate(MBI_MERCADO[,c("Volume")], by = list(Date = MBI_MERCADO$Date), FUN = sum)
+    M$Year <- year(M$Date)
+    M$Month <- month(M$Date)
+    M$Month_abv <- month.abb[M$Month]
+    
+    mod2 <- lm(Volume ~ Month_abv-1, data = M)
+    summary(mod2)
+    
+    new.volume <- data.frame(
+      Month_abv = c("Jan","Feb","Apr","May","Jun","Jul")
+    )
+    
+    predict(mod2, newdata = new.volume)
+    
+  }
+  
+  #RL Sequencial
+  {
+    MBI <- manipulacao()
+    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+    MBI_MERCADO <- MBI
+    M <- aggregate(MBI_MERCADO[,c("Volume")], by = list(Date = MBI_MERCADO$Date), FUN = sum)
+    M$Year <- year(M$Date)
+    M$Month <- month(M$Date)
+    M$Date_seq <- seq(from = 1, to=NROW(M), by= 1)
+    
+    mod2 <- lm(Volume ~ Date_seq, data = M)
+    summary(mod2)
+    mod2$coefficients
+    
+    new.volume <- data.frame(
+      Date_seq = c(1,2,3,4,5,6)
+    )
+    
+    predict(mod2, newdata = new.volume)
+    
+  }
+  
+  #PROPEHET FACEBOOK
+  {
+    MBI <- manipulacao()
+    MBI <- MBI[MBI$Flavor==c("Milk Chocolate") & MBI$`Caloric Content`=="Sugar" & MBI$AVG_PS==c("BIG","VERY SMALL") & MBI$Brand=="Lili",]
+    MBI_MERCADO <- MBI
+    
+    M <- MBI_MERCADO[,c("Date","Volume")]
+    ## 75% DO TAMANHO DA AMOSTRA
+    tamanho_amostra <- floor(0.75 * nrow(M))
+    
+    train <- M[1:tamanho_amostra, ]
+    test <- M[tamanho_amostra:NROW(M), ]
+    colnames(train) <- c('ds', 'y')
+    train <- na.omit(train)
+    M1 <- prophet::prophet(train)
+    future <- make_future_dataframe(M1, periods = 365)
+    forecast <- predict(M1, future)
+    x <- plot(M1, forecast)
+    x1 <- ggplotly(x)
+    x2 <- div( x1, align="center" )
+  } 
+}
