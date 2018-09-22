@@ -78,7 +78,7 @@ plot(HO.F, main="Funcao F")
 par(mfrow = c(1,1))
 
 clarkevans.test(aHousppp)
-
+#Aleatorio p value menor que 0.05
 hopskel.test(aHousppp, alternative="clustered")
 
 Gest=envelope(aHousppp,fun = Gest,nsim=10)
