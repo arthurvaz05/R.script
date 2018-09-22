@@ -1,0 +1,139 @@
+CISP;nome;endereco;delegado
+1;001ª DP – Praça Mauá;Atendendo provisóriamente na sede da 4ªDP;Cláudio Vieira de Campos
+4;004ª DP – Praça da República;Praça Cristiano Ottoni, s/nº;Daniel Mayr Pereira da Costa 
+5;005ª DP – Mem de Sá;Av. Gomes Freire, 320 - Centro;Marcus Henrique de Oliveira Alves 
+6;006ª DP – Cidade Nova;Rua Prof. Clementino Fraga, 77;Maria Aparecida Salgado Mallet 
+7;007ª DP – Santa Teresa;Rua Francisco de Castro, 5;Orlando Zaccone D Elia Filho
+9;009ª DP – Catete;Rua Pedro Américo, 1;Alexandre Henrique Duarte Braga
+10;010ª DP – Botafogo;Rua Bambina, 140;Tarcisio Andreas Jansen
+11;011ª DP – Rocinha;Rua Bertha Lutz, 84, São Conrado;Antonio Ricardo L. Nunes
+12;012ª DP – Copacabana;Rua Hilário de Gouveia, 102;Gabriel Ferrando de Almeida
+13;013ª DP – Ipanema;Av. Nsa. Sra. Copacabana, 1260;Cristiana Onorato Miguel Bento
+14;014ª DP – Leblon;Av. Humberto de Campos, 315;Monique Vidal da Silva Muniz 
+15;015ª DP – Gávea ;Rua Major Rubens Vaz, 170;José Alberto Pires Lage
+16;016ª DP – Barra da Tijuca ;Praça Des.Araujo Jorge, s/nº;Marcus Vinicius Almeida Braga 
+17;017ª DP – São Cristóvão ;Rua São Cristóvão, 309;Mario Luiz da Silva 
+18;018ª DP – Praça da Bandeira ;Rua Barão de Iguatemi, 331;Alcides Alves Pereira 
+19;019ª DP – Tijuca ;Rua General Espírito Santo Cardoso, 208;Gilberto Dias
+20;020ª DP – Vila Isabel ;Rua Luiz de Matos, nº 20;Barbara Lomba Bueno 
+21;021ª DP – Bonsucesso ;Av. Democráticos, 1322;Wellington Pereira Vieira
+22;022ª DP – Penha ;Av. Lobo Junior, 750;Reginaldo Guilherme da Silva
+23;023ª DP – Méier ;Rua Aristides Caire, 80;Luiz Archimedes Gomes de Azeredo 
+24;024ª DP – Piedade ;Rua Goiás, 404;Claudio Nascimento de Souza 
+25;025ª DP – Engenho Novo;Rua Gal. Belford, 123 - Rocha;Herald Paquete Espinola Filho
+26;026ª DP – Todos os Santos;Rua Adriano, nº 304;Jader Machado Amaral 
+27;027ª DP – Vicente de Carvalho ;Rua Ana Frank, s/nº;Luiz Jorge Rodrigues da Silva
+28;028ª DP – Campinho ;Rua Candido Benício, 727;William de Medeiros Pena Junior
+29;029ª DP – Madureira ;Estrada do Portela, nº 391;Niandro Ferreira Lima 
+30;030ª DP – Marechal Hermes ;Rua Xavier Curado, nº 1707;José Otilio Bezerra 
+31;031ª DP - Ricardo de Albuquerque;Estrada Marechal Alencastro, s/n;Rui Barboza de Souza
+32;032ª DP – Taquara;Rua Profª Francisca Piragibe, 80;Rodolfo Waldeck Penco Monteiro
+33;033ª DP – Realengo ;Av. Mal. Fontenelle, s/nº - Jardim Sulacap;Márcia Cristiana Xavier Lopes
+34;034ª DP – Bangu ;Rua Sabogi, 51;Marcus Antônio Neves Pereira
+35;035ª DP – Campo Grande;Av. Maria Teresa, 8;Marcelo Ambrósio
+36;036ª DP – Santa Cruz ;AV. D. João VI, 67;Rodrigo Sebastian Santoro Nunes
+37;037ª DP – Ilha do Governador;Estr. do Galeão, 1365;Geraldo Assed Estefan 
+38;038ª DP – Irajá ;R. Tenente Mateus Levino S.Nº;Delmir da Silva Gouvea
+39;039ª DP – Pavuna ;Rua Mercúrio s/nº;Edson Henrique Damasceno
+40;040ª DP – Honório Gurgel;Rua Guarama, 15;Paulo Henrique da Silva Pinto
+41;041ª DP – Tanque ;Rua Henriqueta, 197;Adriana Cardoso Belem
+42;042ª DP - Recreio;Av. Teotônio Vilela, nº31 - Recreio dos Bandeirantes;Marcia Helena Julião 
+43;043ª DP – Guaratiba ;Estrada do Piai, Qd. 89 Lt-7 e 8;Aglausio Batista Novais Filho 
+44;044ª DP – Inhaúma;Av. Pastor Martin Luther King, s/nº;Roberto Ramos da Silva Santos
+45;045ª DP - Complexo do Alemão;Rua Nova sem número, Itararé ( entrada pela Estação Itararé do Teleférico);Fabio Asty Dantas 
+48;048ª DP – Seropédica ;BR 465, antiga Rio/São Paulo, KM 42 - Campo Limpo;Julio da Silva Filho
+50;050ª DP – Itaguaí ;Rua Gal. Bocaiúva, 410;Jorge Farid Zahra
+51;051ª DP – Paracambi ;Estr. RJ 127 – KM 11 nº 153;Flavio da Rosa Loureiro
+52;052ª DP – Nova Iguaçu ;Av. Governador Amaral Peixoto, nº 950;Leandro Aquino da Silva 
+53;053ª DP – Mesquita ;Av. Presidente Costa e Silva, nº1280;Matheus de Almeida Romanelli Lopes 
+54;054ª DP – Belford Roxo ;Estrada Bento José Martins Silvares, 800;Luiz Henrique Ferreira Guimarães
+55;055ª DP – Queimados ;Rua Manuel Algusto Muquete, s/n;Marcos Celio Vieira Peralta 
+56;056ª DP – Comendador Soares;Rua Tomás da Fonseca, 399;Alexandre Roberto Dellsanto Gusman 
+57;057ª DP – Nilópolis ;Estrada do Expedicionário, 84 Cabuis - Nilópolis;Marco Aurélio de Paula Ribeiro
+58;058ª DP – Posse;Av. Henrique Duque Estrada Meyer, 149;Adriano Marcelo Firmo França 
+59;059ª DP – Duque de Caxias ;Rua Ailton Costa, s/nº;Raissa Maria dos Santos Celles 
+60;060ª DP – Campos Elíseos ;Rua Dr. Manoel Alves, s/nº;José de Moraes Ferreira
+61;061ª DP – Xerém ;Rua Maranhão, 5;José Afonso Mota 
+62;062ª DP – Imbariê ;Rua Mal.Hermes;Marcos Santana Gomes
+63;063ª DP – Japeri ;Estrada Vereador Francisco da Costa Filho,s/nº;Rodrigo Freitas
+64;064ª DP – S. J.Meriti;Avenida Doutor Arruda Negreiro, s/nº;Roberto de Souza Cardoso
+65;065ª DP – Magé ;Praça Getúlio Vargas, 20;Angelo Jose Lages Machado 
+66;066ª DP – Piabetá ;Av. Santos Dumont, s/nº;Antonio Silvino Teixeira
+67;067ª DP – Guapimirim;Estrada do Bananal, 1919 - Bananal;Veronica Stiepanowez de Oliveira
+70;070ª DP – Tanguá;Rua Firmino Francisco Leite, s/nº;Raul Gustavo Morgado
+71;071ª DP – Itaboraí ;Av. 22 de maio, 5.963;Oscar de Sa Alves
+72;072ª DP – São Gonçalo ;Av. 18 do Forte, 578;Flavio Almeida Narcizo 
+73;073ª DP – Neves ;Rua Oliveira Botelho,s/nº;Carla Conceição Guimarães Tavares de Lima
+74;074ª DP – Alcântara ;Praça Carlos Gianely, 15;Fabio Corsino Freire 
+75;075ª DP – Rio do Ouro ;Estr. Velha de Marica, s/nº;Marcos Antonio da Silva 
+76;076ª DP – Niterói ;Ernani do Amaral Peixoto;Glaucio Paz da Silva 
+77;077ª DP – Icaraí ;Rua Lemos Cunha, 475;Robson da Costa Ferreira da Silva
+78;078ª DP – Fonseca ;Alameda São Boaventura, 773;José William de Medeiros 
+79;079ª DP – Jurujuba ;Av. Quintino Bocaiúva, 115;Claudio Otero Ascoli
+81;081ª DP – Itaipu ;Av. Francisco da Cruz nº6666 - Piratininga;Lauro Cesar Lethier Rangel 
+82;082ª DP – Maricá ;Rua Athayde Parreira, s/nº;Julio Cesar Mulatinho Neto
+88;088ª DP – Barra do Piraí ;Rua Paulo de Frontin, 132;Carina da Silva Bastos 
+89;089ª DP – Resende ;Rua Guita Ferreira da Rocha, s/nº;Marcelo Nunes Ribeiro 
+90;090ª DP – Barra Mansa ;Av. Domingos Mariano, s/nº;Ronaldo Aparecido Ferreira Brito
+91;091ª DP – Valença ;Rodovia RJ, 145-lote 28;Luciano Coelho dos Santos
+92;092ª DP – Rio das Flores ;Rua João Carvalho da Rocha, 71;Luciano Coelho dos Santos
+93;093ª DP – Volta Redonda ;Rua Lucas Evangelista, 667;Eliezer Lourenço Costa
+94;094ª DP – Piraí ;Rua 15 de Novembro 290;Marco Antonio de A. Alves
+95;095ª DP – Vassouras ;Av. Mal. Paulo Torres, 477;Renato Soares Vieira 
+96;096ª DP – Miguel Pereira ;Rua Zeni Esteves, s/nº-Pça da Band;Marcello Braga Maia 
+97;097ª DP – Mendes ;Rua Maria Caetana, 54;Luiz Fernando Nader Damasceno
+98;098ª DP – Eng. Paulo de Frontin;RJ/127 22125, São Lourenço;Luiz Fernando Nader Damasceno
+99;099ª DP – Itatiaia ;Av. Dois, Lote A - Jardim Itatiaia;Vicente Maximiliano Rodrigues Barbosa
+100;100ª DP – Porto Real ;Rua Ariosto Roberto Pederassi, 570;Marcelo dos Santos Haddad 
+101;101ª DP – Pinheiral ;Rua José Breves, 294 - Central;Antonio da Luz Furtado
+104;104ª DP – São J. V. Rio Preto ;Rua Alfredo Jacintho Franco, s/nº;Paulo César Vieira
+105;105ª DP – Petrópolis ;Avenida Barão do Rio Branco, s/nº.;Cláudio Batista Teixeira 
+106;106ª DP – Itaipava ;Estrada União Indústria, 8.764;Nei José Ramos Costa
+107;107ª DP – Paraíba do Sul ;Praça Garcia, 27;Claudia Teresa Nardy Abbud
+108;108ª DP – Três Rios ;Av. Castro Alves, 116;Andre Luiz Pinto Lourenço
+109;109ª DP – Sapucaia ;Rua Rafael Langone,600;Marcelo Cunha Vieira
+110;110ª DP – Teresópolis ;Av. Alberto Torres, 569;Paulo Roberto Lima de Freitas
+111;111ª DP – Sumidouro ;Rua Carlos Alberto P. de Moura Junior, 74;Vinicius Paiva Galhardo
+112;112ª DP – Carmo ;Praça Alexandre de Mello, 109;Herbert Tavares Cardoso
+118;118ª DP – Araruama ;Rua Bernardo de Vasconcelos, 755;Luiz Henrique Marques Pereira
+119;119ª DP – Rio Bonito ;Av.Antonio Carlos de Souza Guadelupe, s/nº - Green Valley;Carlos Eduardo Pereira Almeida 
+120;120ª DP – Silva Jardim ;RuaComandante Pereira Filho, 51;Juaraci Rodrigues Cardoso Vieira
+121;121ª DP – Casemiro de Abreu ;Rua Geny da Cruz Leite, s/nº;Daniela dos Santos Rebelo Pinto
+122;122ª DP – Conceição de Macabu ;Rua Plácido Freire, 72;Franquis Dias Nepomuceno 
+123;123ª DP – Macaé ;Rua São João, nº 35 – Centro - Macaé;Filipi Poeys Lima 
+124;124ª DP – Saquarema ;Rua Dr. Luiz Januário, 201;Leonardo Luis Macharet
+125;125ª DP - São Pedro D´Adeia;Av. Nsa. Sra. Fátima, frte 312;Jorge Luiz da Silva Veloso 
+126;126ª DP – Cabo Frio ;Rua Teixeira e Souza, s/nº;Renato dos Santos Mariano
+127;127ª DP – Armação de Búzios ;Avenida Parque s/n;Rômulo Prado de Mesquita
+128;128ª DP – Rio das Ostras ;Av. Jane Maria Martins Figueira, s/n/ - Jardim Marileia;Juliana Rattes C. de Queiroz 
+129;129ª DP – Iguaba Grande;Rua Profeta Jeremias, s/nº;Janaina Cristina Peregrino 
+130;130ª DP – Quissamã;Estrada do Correio Imperial, s/nº - Piteiras;Ivailson Moreira Sardinha
+132;132ª DP – Arraial do Cabo;Av. General Bruno Martins, s/nº;Flavia Goes Monteiro Romero de Barros
+134;134ª DP – Campos ;Rua Barão de Miracema, 231;Geraldo Rangel de Andrade Júnior
+135;135ª DP – Itaocara ;Av. Roberto Silveira, 84;Luiz Augusto Carvalho de Souza 
+136;136ª DP – S. Antônio de Pádua ;Rua Arthur Silva, 151;Rudolph Bruno Anastácio
+137;137ª DP – Miracema ;Rua Irineu Sodré, 178;Vilson de Almeida Silva 
+138;138ª DP – Laje do Muriaé ;Rua Hélio M. de Sá, s/nº;Bruno Cleuder de Melo
+139;139ª DP – Porciúncula ;Rua Antônio Duarte, s/nº;Uillian Rodrigues Costa
+140;140ª DP – Natividade ;Av. Gov. Roberto Silveira, s/nº;Gesner Cesar Bruno
+141;141ª DP – São Fidelis ;Av. Pres. Kennedy, 17;Rodrigo Vinicius Andrade Maia
+142;142ª DP – Cambuci ;Rua 13 de Maio, 303;Luiz Augusto Carvalho de Souza 
+143;143ª DP – Itaperuna ;Delegacia Delegado Titular Telefones;Márcio Caldas Dias Mello 
+144;144ª DP – B. Jesus Itabapoana ;Av. Gov. Roberto Silveira, 148;Avelino C. L. Filho
+145;145ª DP – São João da Barra;Rod. BR 356 – Campos - Atafona;Carlos Augusto G. da Silva 
+146;146ª DP – Guarus ;Rua Patrício Menezes e Hipólito Sardinha;Luis Mauricio Armond Campos 
+147;147ª DP – S Francisco Itabapoana ;Rua Joaquim da Mota Sobrinho, 230;Ivana Maria Peres Morgado 
+148;148ª DP – Italva;Rua Aristides Gonçalves de Souza, s/nº;Maurício Barros de Azevedo
+151;151ª DP – Nova Friburgo;Rua Teresópolis, s/nº;Mario Roberto Arruda
+152;152ª DP – Duas Barras ;Rua Getúlio Vargas, 22;Mariana Thomé de Moraes
+153;153ª DP – Cantagalo ;Rua Getúlio Vargas, 114;Carlos Alexandre Leite Justiniano 
+154;154ª DP – Cordeiro;Av. Pres. Vargas, 296;Robson Pizzo Braga 
+155;155ª DP – São Sebastião do Alto;Cel. Fco. Salustiano Pinto, 210;Renato José Mascarenhas Perez 
+156;156ª DP – Santa Maria Madalena ;Rua Cel. Brás, s/nº;Carla Vargas de Oliveira 
+157;157ª DP – Trajano de Moraes ;Alameda Rui Barbosa, s/nº;Henrique Paulo Mesquita Pessoa
+158;158ª DP – Bom Jardim ;Praça Gov. Roberto Silveira, 170;Gilberto Soares da Silva
+159;159ª DP – Cachoeira de Macacu ;Av. Lord Baden Powel, 93;Clovis Souza Moreira 
+165;165ª DP – Mangaratiba ;Estrada São João Marcos, s/nº;Milton Siqueira Junior 
+166;166ª DP – Angra dos Reis ;Rua Dr. Coutinho, 6;Bruno Gilaberte Freitas Savignon 
+167;167ª DP – Paraty;Rua Roberto da Silveira , s/n;Uriel Alcantara Machado Nunes
+168;168ª DP – Rio Claro ;Rua Fagundes de Varela, 74;Michel André Murillo Floroschk
