@@ -4,14 +4,19 @@ library(caTools)
 library(ROCR)
 
 banco <- read.csv("Banco_base.csv", sep = ";")
+#retirando da base as transações com operation_status vazias 
 banco_resp <- subset(banco, banco$operation_status!="")
+#padronizando a variavel genero
 banco_resp$gender <- replace(banco_resp$gender,banco_resp$gender=="MALE","male")
+#transformando em formato data para usar essa variavel como numerica
 banco_resp$birth_date <- format(as.Date(banco_resp$birth_date,"%d/%m/%Y"), "%d/%m/%Y")
 banco_resp$birth_date <- as.Date(banco_resp$birth_date,"%d/%m/%Y")
 banco_resp$age <- 2018 - year(banco_resp$birth_date)
+#repetindo o processedimento acima com a data de criacao
 banco_resp$created_at <- format(as.Date(banco_resp$created_at,"%d/%m/%Y"), "%d/%m/%Y")
 banco_resp$created_at <- as.Date(banco_resp$created_at,"%d/%m/%Y")
 banco_resp$tempo_criado <- 2018 - year(banco_resp$created_at)
+#retirando as duas variaveis data da base por ser ruim de trabalhar
 banco_resp[ ,c('birth_date', 'created_at')] <- list(NULL)
 
 summary(banco_resp[banco_resp$operation_status=="closed" &is.na(banco_resp$declares_income_tax),])
