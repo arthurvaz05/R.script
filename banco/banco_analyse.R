@@ -4,22 +4,19 @@ library(caTools)
 library(ROCR)
 library(purrr)
 library(reshape2)
-install.packages("dummies")
+#install.packages("dummies")
 library(dummies)
 library(caret)
+library(FactoMineR)
 
 banco <- read.csv("Banco_base.csv", sep = ";")
-<<<<<<< HEAD
 banco_resp <- banco
 banco_resp$operation_status <- as.character(banco_resp$operation_status)
 banco_resp$operation_status <- ifelse(banco_resp$operation_status=="","open", banco_resp$operation_status)
 banco_resp <-dummy.data.frame(banco_resp, names=c("operation_status"), sep="_")
 
-=======
-#retirando da base as transações com operation_status vazias 
-banco_resp <- subset(banco, banco$operation_status!="")
+
 #padronizando a variavel genero
->>>>>>> 43aca51037f863dbd428631a4cd25d040fadb307
 banco_resp$gender <- replace(banco_resp$gender,banco_resp$gender=="MALE","male")
 #transformando em formato data para usar essa variavel como numerica
 banco_resp$birth_date <- format(as.Date(banco_resp$birth_date,"%d/%m/%Y"), "%d/%m/%Y")
@@ -76,7 +73,6 @@ banco_resp$operation_status_open <- as.factor(banco_resp$operation_status_open)
 banco_resp$operation_status_no_closed <- as.factor(banco_resp$operation_status_no_closed)
 banco_resp$operation_status_ongoing <- as.factor(banco_resp$operation_status_ongoing)
 
-set.seed(144)
 
 banco_resp_open <- banco_resp[banco_resp$operation_status_open==1,]
 banco_resp <- banco_resp[banco_resp$operation_status_open!=1,]
@@ -97,6 +93,16 @@ banco_resp[is.na(banco_resp)] <- 0
 #MOVER A COLUNA operation_status_closed PARA ULTIMA POSICAO
 col_idx <- grep("operation_status_closed", names(banco_resp))
 banco_resp <- banco_resp[, c((1:ncol(banco_resp))[-col_idx],col_idx)]
+
+#REDUZIR DIMENSIONALIDADE
+numerico <- c("monthly_income","phone_code","cpf_restriction","auto_value","auto_debt","loan_amount","age","tempo_criado") 
+fatores <- c("gender","registration_form_closed","model_year","declares_income_tax","operation_status_closed")
+banco_PCA <-  banco_resp[,numerico]
+pca <- PCA(banco_PCA)
+
+Correlation_Matrix=as.data.frame(round(cor(Data_for_PCA,pca$ind$coord)^2*100,0))
+Correlation_Matrix[with(Correlation_Matrix, order(-Correlation_Matrix[,1])),]
+
 
 split = sample.split(banco_resp$operation_status_closed, SplitRatio = 0.7)
 
