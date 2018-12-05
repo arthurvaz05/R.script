@@ -4,7 +4,7 @@ library(caTools)
 library(ROCR)
 library(purrr)
 library(reshape2)
-#install.packages("dummies")
+library(scoring)
 library(dummies)
 library(caret)
 library(FactoMineR)
@@ -63,7 +63,9 @@ sapply(banco_resp, class)
 
 banco_resp$monthly_income <- as.numeric(banco_resp$monthly_income)
 banco_resp$registration_form_closed <- as.factor(banco_resp$registration_form_closed)
+banco_resp$cpf_restriction <- as.factor(banco_resp$cpf_restriction)
 banco_resp$model_year <- as.factor(banco_resp$model_year)
+banco_resp$phone_code <- as.factor(banco_resp$phone_code)
 banco_resp$auto_value <- as.numeric(banco_resp$auto_value)
 banco_resp$auto_debt <- as.numeric(banco_resp$auto_debt)
 banco_resp$loan_amount <- as.numeric(banco_resp$loan_amount)
@@ -95,14 +97,37 @@ col_idx <- grep("operation_status_closed", names(banco_resp))
 banco_resp <- banco_resp[, c((1:ncol(banco_resp))[-col_idx],col_idx)]
 
 #REDUZIR DIMENSIONALIDADE
-numerico <- c("monthly_income","phone_code","cpf_restriction","auto_value","auto_debt","loan_amount","age","tempo_criado") 
-fatores <- c("gender","registration_form_closed","model_year","declares_income_tax","operation_status_closed")
+numerico <- c("monthly_income","auto_value","auto_debt","loan_amount","age","tempo_criado") 
+fatores <- c("gender","registration_form_closed","model_year","declares_income_tax","operation_status_closed","cpf_restriction","phone_code")
 banco_PCA <-  banco_resp[,numerico]
 pca <- PCA(banco_PCA)
 
-Correlation_Matrix=as.data.frame(round(cor(Data_for_PCA,pca$ind$coord)^2*100,0))
+Correlation_Matrix=as.data.frame(round(cor(banco_PCA,pca$ind$coord)^2*100,0))
 Correlation_Matrix[with(Correlation_Matrix, order(-Correlation_Matrix[,1])),]
 
+numerico2 <- c("tempo_criado","monthly_income","auto_debt")
+
+cats = apply(banco_resp[,fatores], 2, function(x) nlevels(as.factor(x)))
+
+mca <- MCA(banco_resp[,fatores])
+head(mca$var$coord)
+mca1_vars_df = data.frame(mca$var$coord, Variable = rep(names(cats), 
+                                                         cats))
+mca1_obs_df = data.frame(mca$ind$coord)
+
+ggplot(data = mca1_vars_df, aes(x = Dim.1, y = Dim.2, label = rownames(mca1_vars_df))) + 
+  geom_hline(yintercept = 0, colour = "gray70") + geom_vline(xintercept = 0, 
+                                                             colour = "gray70") + geom_text(aes(colour = Variable)) + ggtitle("MCA grafico")
+
+ggplot(data = mca1_obs_df, aes(x = Dim.1, y = Dim.2)) + geom_hline(yintercept = 0, 
+                                                                   colour = "gray70") + geom_vline(xintercept = 0, colour = "gray70") + geom_point(colour = "gray50", 
+                                                                                                                                                   alpha = 0.7) + geom_density2d(colour = "gray80") + geom_text(data = mca1_vars_df, 
+                                                                                                                                                                                                                aes(x = Dim.1, y = Dim.2, label = rownames(mca1_vars_df), colour = Variable)) + 
+  ggtitle("MCA grafico com areas agrupadas") + scale_colour_discrete(name = "Variable")
+
+fatores2 <- c("declares_income_tax","operation_status_closed","cpf_restriction")
+
+banco_resp <- banco_resp[,c(fatores2,numerico2)]
 
 split = sample.split(banco_resp$operation_status_closed, SplitRatio = 0.7)
 
@@ -113,10 +138,29 @@ test = subset(banco_resp, split == FALSE)
 regre <- glm(operation_status_closed~., data = train, family= "binomial")
 summary(regre)
 
+install.packages('verification')
+library(verification)
+
+#BriefScore
+#http://cawcr.gov.au/projects/verification/Workshop2004/presentations/2.4_Pocernich.pdf
+a <- verify(test$operation_status_closed, predictTest > threshold)
+
+#Calibration Plot
+#https://www.r-bloggers.com/calibration-affirmation/
+#https://stackoverflow.com/questions/52156633/r-manually-plot-calibration-plot
+tibble_ex <- test %>%
+  mutate(pred = predict(regre, type = 'response', newdata=test))
+
+tibble_ex %>%
+  arrange(pred) %>%
+  ggplot(aes(x = pred, y = operation_status_closed)) +
+  stat_smooth(method = 'glm', method.args = list(family = binomial), se = F) +
+  geom_abline()
+
 predictTest = predict(regre, type="response", newdata=test)
 
 
-threshold <- 0.20
+threshold <- 0.50
 
 tapply(predictTest, test$operation_status_closed, mean)
 table(test$operation_status_closed, predictTest > threshold)
