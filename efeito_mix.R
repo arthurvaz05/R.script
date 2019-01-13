@@ -1,5 +1,5 @@
 library(tidyverse)
-library(ggplot2)
+library(dplyr)
   
 resultados <- data.frame("SKU" = c("A","B","C","A","B","C"),
                          "Preco" = round(runif(6, min=13.80, max=15.30),2),
@@ -44,8 +44,10 @@ variacao_preco <- sum((resultados[resultados$Periodo==2,"Preco"]-resultados[resu
 variacao_mix <- sum((resultados[resultados$Periodo==2,"Qtd"]-(resultados[resultados$Periodo==1,"delta"]*sum(resultados[resultados$Periodo==2,"Qtd"])))*
 (resultados[resultados$Periodo==1,"Preco"]-(sum(resultados[resultados$Periodo==1,"Faturamento"])/sum(resultados[resultados$Periodo==1,"Qtd"]))))
 
-variacao_faturamento == round(variacao_vol + variacao_preco + variacao_mix,2)
+variacao_faturamento
+round(variacao_vol + variacao_preco + variacao_mix,2)
 
+library(plotly)
 
 x <- c('a_faturamento_p1','b_variacao_vol', 'c_variacao_preco', 'd_variacao_mix','e_faturamento_p2')
 y <- c(faturamento_p1,variacao_vol, variacao_preco, variacao_mix,faturamento_p2)
@@ -60,10 +62,6 @@ data$end <- c(head(data$acum, -1),0)
 data$start <- c(0,head(data$end, -1))
 data$variacao <- as.factor(data$variacao)
 
-ggplot(data, aes(x, fill=variacao)) + 
-  geom_rect(aes(x = x, xmin = id - 0.45, xmax = id + 0.45, ymin = end, ymax = start)) + 
-  scale_fill_manual(values=c("#D55E00", "#009E73"))
-
 # #install.packages("devtools")
 # devtools::install_github("cardiomoon/ggplotAssist")
 # remove.packages(c("ggplot2", "data.table"))
@@ -73,6 +71,10 @@ ggplot(data, aes(x, fill=variacao)) +
 #https://rstudio-pubs-static.s3.amazonaws.com/329677_8f579b9e46284caeb9d3a72b7fdb7ac3.html
 
 
+library(ggplot2)
+ggplot(data, aes(x, fill=variacao)) + 
+  geom_rect(aes(x = x, xmin = id - 0.45, xmax = id + 0.45, ymin = end, ymax = start)) + 
+  scale_fill_manual(values=c("#D55E00", "#009E73"))
 
 
 
