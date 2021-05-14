@@ -1,0 +1,7 @@
+library(dplyr)
+install.packages('pander')
+library(pander)
+install.packages('MLmetrics')
+library(MLmetrics)
+library(ggplot2)
+library(rpart)
